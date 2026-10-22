@@ -1,140 +1,344 @@
 # 3. Obrasci uporabe
 
-**Cilj:** Prikazati glavne interakcije između aktera aplikacije i sustava. Opišite kako akter ostvaruje cilj i što se događa kada važan korak ne uspije. Interakcije temeljite na odobrenim zahtjevima i ažurirajte ih kako se aplikacija razvija.
-
 ## 3.1 Dijagram obrazaca uporabe
 
-**Cilj:** Prikazati granicu sustava, relevantne aktere i njihove glavne ciljeve u **preglednom UML dijagramu obrazaca uporabe**. Ako je za razumijevanje pojedinog dijela sustava potrebno prikazati više detalja, taj dio izdvojite u dodatni usmjereni dijagram. Dodatni dijagrami trebaju produbiti dio preglednog modela, a ne stvarati nepovezane ili duplicirane prikaze istog sustava.
+![Dijagram obrazaca uporabe sustava StormWatch](./assets/diagrams/3-1-stormwatch-system-UC.svg)
 
-![Dijagram obrazaca uporabe sustava CrisisMap](./assets/diagrams/3-1-crisismap-system-UC.svg)
+**Slika 3.1. Dijagram obrazaca uporabe sustava StormWatch**
 
-**Slika 3.1. Dijagram obrazaca uporabe sustava CrisisMap**
-
-**PlantUML izvor:** [izvor](./puml/3-1-crisismap-system-UC.puml)
-
-**Provjera dijagrama:** Prikažite prepoznate uloge koje **komuniciraju s aplikacijom**, a ne dionike koji s njom nemaju interakciju. Svaki glavni korisnički cilj mora imati pridruženog aktera; uključeni obrazac uporabe može se dosegnuti preko drugog obrasca uporabe bez vlastite izravne veze s akterom. `<<include>>` i `<<extend>>` koristite samo kada odnos odgovara stvarnom ponašanju.
-
-<details>
-<summary><strong>Primjer aktera i granica sustava</strong></summary>
-
-**Opis primjera — CrisisMap:**
-
-Dijagram prikazuje **ogledni scenarij** s građaninom, posjetiteljem i koordinatorom pomoći te vanjskim pružateljem identiteta. Pružatelj identiteta sudjeluje u obrascu uporabe „Prijava u sustav” kao sekundarni akter: korisnik pokreće prijavu u aplikaciji, a vanjski sustav provodi autentikaciju. Budući da projekt koristi vanjskog pružatelja identiteta, ta se ovisnost prikazuje i u dijagramu obrazaca uporabe; tehnički detalji integracije pripadaju arhitekturnoj dokumentaciji.
-
-**Odabir aktera i ciljeva:** Granica pokazuje što aplikacija nudi, akteri imaju različite ciljeve, a nijedan akter ni obrazac uporabe ne tvrdi da ova studentska aplikacija angažira hitne službe. Dijagram usporedite s odobrenim funkcijskim zahtjevima i akterima.
-
-
-**Pet pitanja za odabir sadržaja dijagrama** (ne pet dijagrama za predaju):
-
-| Fokus | Pitanje |
-| --- | --- |
-| Cijeli sustav | Koji korisnički ciljevi najbolje objašnjavaju čemu ova aplikacija služi? |
-| Ključne funkcionalnosti | Koje ciljeve treba detaljnije opisati ili, ako je potrebno, prikazati zasebnim usmjerenim dijagramom? |
-| Korisničke uloge | Koji akteri mogu sudjelovati u pojedinom cilju i kako se njihove ovlasti razlikuju? |
-| Ključni procesi | Koji cilj ima važne alternative koje treba opisati u obrascu uporabe? |
-| Vanjske integracije | Sudjeluje li drugi sustav u obrascu uporabe kao **sekundarni akter**, primjerice odobreni pružatelj identiteta pri prijavi? |
-
-Vanjski sustav može biti sekundarni akter obrasca uporabe kada sudjeluje u ostvarenju korisničkog cilja; tehničke veze opisuju se u arhitekturi. Nemojte stvarati dodatni obavezni dijagram obrazaca uporabe samo radi popisa integracija. Prenatrpan dijagram podijelite prema povezanim akterima ili ciljevima samo kada time postaje čitljiviji.
-
-</details>
+**PlantUML izvor:** [izvor](./puml/3-1-stormwatch-system-UC.puml)
 
 ## 3.2 Specifikacije obrazaca uporabe
 
-**Cilj:** Za svaki obrazac uporabe iz dijagrama objasniti cilj aktera, uobičajenu interakciju s aplikacijom i važne alternative. Jednostavne obrasce uporabe opišite kratko; proširite one kod kojih alternative, vanjske ovisnosti ili posljedice zahtijevaju dodatno objašnjenje.
+Ključni obrasci uporabe (UC-001, UC-004, UC-008, UC-010, UC-012, UC-018, UC-028) opisani su detaljno; ostali kratko. Oznake PR-xx i P-xx su poslovna pravila i parametri iz odjeljka [2.1](2-Analiza-zahtjeva.md#21-funkcijski-zahtjevi).
 
-**Za svaki obrazac uporabe koristite jednu okomitu tablicu.** Navedite samo onoliko pojedinosti koliko interakcija zahtijeva; neprimjenjivu alternativu izostavite umjesto da je popunjavate samo radi forme.
+### UC-001: Pregled karte i slojeva
 
-### UC-[ID]: [Naziv usmjeren na cilj]
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| :-------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-01 Posjetitelj (i svi akteri koji ga nasljeđuju); sekundarni: A-09 Kartografska usluga                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Povezani zahtjevi**             | F-014 – F-019, F-022, F-071                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Preduvjeti**                    | Postoji barem jedno uspješno preuzimanje podataka DHMZ-a.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Glavni uspješni tok**           | 1. Korisnik otvara naslovnicu.<br>2. Sustav prikazuje kartu Hrvatske s uključenim slojevima mjernih postaja i upozorenja te vrijeme posljednjeg preuzimanja.<br>3. Korisnik pomiče i zumira kartu na željeno područje.<br>4. Korisnik uključuje sloj prijava.<br>5. Sustav prikazuje prijave koje korisnik smije vidjeti (PR-10).<br>6. Korisnik odabire mjernu postaju.<br>7. Sustav prikazuje naziv postaje, vrijeme mjerenja i posljednja mjerenja, uz navod izvora DHMZ.                               |
+| **Alternativni tokovi / Iznimke** | **2a — Kartografska usluga nije dostupna:** sustav prikazuje poruku i popis aktivnih upozorenja u tekstualnom obliku.<br>**2b — Izvor DHMZ-a nije dostupan:** sustav prikazuje posljednje pohranjene podatke s vremenom mjerenja.<br>**4a — Odabran filtar:** korisnik filtrira prijave po vrsti pojave ili razdoblju; sustav prikazuje samo odgovarajuće prijave, a ako ih nema, poruku „Nema prijava za odabrani filtar”.<br>**5a — Korisnik nije prijavljen:** sustav prikazuje samo potvrđene prijave. |
+| **Posljedice (ishod)**            | Podaci se ne mijenjaju; korisnik vidi službene podatke i prijave za odabrano područje. Nove prijave pojavljuju se bez osvježavanja stranice.                                                                                                                                                                                                                                                                                                                                                               |
 
-| Element specifikacije | Opis |
-| :--- | :--- |
-| **Primarni akter** | [Uloga definirana u analizi zahtjeva] |
-| **Povezani zahtjevi** | [Identifikatori funkcijskih zahtjeva, npr. F-001, F-004] |
-| **Preduvjeti** | [Stanje sustava koje mora biti zadovoljeno prije početka izvođenja] |
-| **Glavni uspješni tok** | 1. Akter pokreće akciju.<br>2. Program obrađuje unos i vraća povratnu informaciju.<br>3. [Koračni prikaz interakcije do ostvarenja cilja] |
-| **Alternativni tokovi / Iznimke** | **[Korak]a — [Naziv iznimke]:** [Uvjet nastanka, reakcija programa i nastavak toka] |
-| **Posljedice (ishod)** | [Promjena stanja podataka ili potvrda nakon uspješnog završetka] |
+### UC-002: Pregled trenutačnih uvjeta i prognoze za mjesto
 
-<details>
-<summary><strong>Primjeri specifikacija: Registracija i prijava kriznog događaja</strong></summary>
+| Element specifikacije             | Opis                                                                                                                                                                                            |
+| :-------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-01 Posjetitelj                                                                                                                                                                                |
+| **Povezani zahtjevi**             | F-015, F-020                                                                                                                                                                                    |
+| **Preduvjeti**                    | Pohranjeni su podaci DHMZ-a.                                                                                                                                                                    |
+| **Glavni uspješni tok**           | 1. Korisnik odabire mjesto na karti ili ga traži po nazivu.<br>2. Sustav prikazuje mjerenja najbliže postaje i prognozu najbližeg mjesta za koje DHMZ objavljuje prognozu, uz naziv tog mjesta. |
+| **Alternativni tokovi / Iznimke** | **2a — Nema prognoze u blizini:** sustav prikazuje samo mjerenja i poruku da prognoza nije dostupna.                                                                                            |
+| **Posljedice (ishod)**            | Podaci se ne mijenjaju.                                                                                                                                                                         |
 
-**Primjer — CrisisMap:**
+### UC-003: Pregled aktivnih upozorenja
 
-**UC-001: Registracija računa.** Ovaj kratki primjer odnosi se na projekt čiji odobreni zadatak uključuje račune s adresom e-pošte i lozinkom.
+| Element specifikacije             | Opis                                                                                                                                                                                              |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Primarni akter**                | A-01 Posjetitelj                                                                                                                                                                                  |
+| **Povezani zahtjevi**             | F-016, F-021                                                                                                                                                                                      |
+| **Preduvjeti**                    | Pohranjena su upozorenja DHMZ-a.                                                                                                                                                                  |
+| **Glavni uspješni tok**           | 1. Korisnik otvara popis upozorenja.<br>2. Sustav prikazuje upozorenja čije razdoblje važenja obuhvaća trenutačno vrijeme, s regijom, vrstom pojave, razinom (boja i tekst) i razdobljem važenja. |
+| **Alternativni tokovi / Iznimke** | **2a — Nema aktivnih upozorenja:** sustav prikazuje „Nema aktivnih upozorenja”.                                                                                                                   |
+| **Posljedice (ishod)**            | Podaci se ne mijenjaju.                                                                                                                                                                           |
 
-| Polje | Opis |
-| --- | --- |
-| Primarni akter | Građanin (A-02 u primjeru) |
-| ID zahtjeva | F-001 |
-| Preduvjeti, ako postoje | Nema. |
-| Glavni tijek | Građanin unosi adresu e-pošte; aplikacija šalje poveznicu za potvrdu; građanin potvrđuje račun. |
-| Alternativni ili neuspješni tijekovi, ako postoje | Adresa e-pošte već postoji → aplikacija objašnjava zašto se registracija ne može nastaviti. |
-| Rezultat | Račun je aktivan nakon potvrde. |
+### UC-004: Registracija
 
-Ako odobreni zadatak umjesto toga koristi isključivo OAuth prijavu, zamijenite ovaj primjer odgovarajućim ponašanjem prijave; nemojte dodavati registraciju lokalnom lozinkom samo radi podudaranja s primjerom.
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Primarni akter**                | A-01 Posjetitelj; sekundarni: A-10 Poslužitelj e-pošte                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Povezani zahtjevi**             | F-001, F-002                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Preduvjeti**                    | Posjetitelj nije prijavljen.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Glavni uspješni tok**           | 1. Posjetitelj odabire „Registracija”.<br>2. Sustav prikazuje obrazac: korisničko ime, e-pošta, lozinka i potvrda obavijesti o privatnosti.<br>3. Posjetitelj unosi podatke i potvrđuje.<br>4. Sustav provjerava jedinstvenost korisničkog imena i e-pošte te pravilo lozinke (PR-15).<br>5. Sustav stvara račun u stanju „nepotvrđen” i šalje poveznicu za potvrdu na adresu e-pošte.<br>6. Posjetitelj otvara poveznicu.<br>7. Sustav aktivira račun i nudi prijavu u sustav. |
+| **Alternativni tokovi / Iznimke** | **4a — Zauzeto korisničko ime ili e-pošta:** sustav traži ispravak; račun se ne stvara.<br>**4b — Lozinka ne zadovoljava PR-15:** sustav prikazuje pravilo i traži novu lozinku.<br>**4c — Obavijest o privatnosti nije potvrđena:** registracija nije moguća.<br>**5a — Slanje e-pošte nije uspjelo:** sustav nudi ponovno slanje poveznice.<br>**6a — Poveznica je istekla (P-01):** račun ostaje nepotvrđen; sustav nudi novu poveznicu.                                     |
+| **Posljedice (ishod)**            | Račun je aktivan i korisnik se može prijaviti u sustav.                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
-**UC-002: Podnošenje prijave kriznog događaja.** Ista polja mogu opisati dulji tijek u kojem odabir lokacije, provjera valjanosti i pohrana mogu ne uspjeti.
+### UC-005: Prijava i odjava
 
-| Polje | Opis |
-| --- | --- |
-| Primarni akter | Građanin |
-| ID zahtjeva | F-004 |
-| Preduvjeti, ako postoje | Obrazac za prijavu dostupan je. Ako odobreni zadatak zahtijeva prijavu u sustav, građanin je prijavljen. |
-| Glavni tijek | 1. Građanin otvara obrazac za prijavu; aplikacija prikazuje polja za vrstu kriznog događaja, razinu ozbiljnosti, opis i lokaciju.<br>2. Građanin unosi podatke i odabire lokaciju na karti ili drugim podržanim načinom.<br>3. Građanin podnosi obrazac; aplikacija provjerava obavezna polja i lokaciju.<br>4. Aplikacija pohranjuje prijavu i prikazuje potvrdu s referencom na nju. |
-| Alternativni ili neuspješni tijekovi, ako postoje | **1a — Prijava u sustav nije uspjela:** Ako je prijava obavezna, a pružatelj identiteta je ne dovrši, prijava kriznog događaja ostaje nepodnesena i aplikacija objašnjava kako pokušati ponovno.<br>**2a — Odbijen pristup lokaciji:** Ako aplikacija nudi geolokaciju, ali je korisnik odbije, građanin ručno odabire lokaciju ako ta mogućnost postoji; tijek se nastavlja u koraku 3.<br>**3a — Nevaljana ili nedostajuća lokacija:** Aplikacija objašnjava problem, po mogućnosti zadržava unesene podatke i ne pohranjuje prijavu; građanin ispravlja lokaciju i ponavlja korak 3.<br>**3b — Pohrana nije uspjela:** Aplikacija prijavljuje neuspjeh i ne prikazuje lažnu potvrdu o podnošenju. |
-| Rezultat | Aplikacija pohranjuje prijavu kriznog događaja i potvrđuje njezino podnošenje. |
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                      |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                                                                                                                |
+| **Povezani zahtjevi**             | F-003 – F-007                                                                                                                                                                                                                                                             |
+| **Preduvjeti**                    | Korisnik ima aktivan račun.                                                                                                                                                                                                                                               |
+| **Glavni uspješni tok**           | 1. Korisnik unosi korisničko ime (ili e-poštu) i lozinku.<br>2. Sustav provjerava podatke i izdaje pristupni token prema OAuth 2.0.<br>3. Korisniku su dostupne funkcije za registrirane korisnike.<br>4. Korisnik se odjavljuje; sustav poništava token za osvježavanje. |
+| **Alternativni tokovi / Iznimke** | **2a — Neispravni podaci:** poruka koja ne otkriva postoji li račun.<br>**2b — Šesti neuspjeli pokušaj u 15 min:** račun je zaključan 15 min (NF-16).<br>**1a — Zaboravljena lozinka:** korisnik traži poveznicu za novu lozinku na potvrđenu e-poštu (F-006).            |
+| **Posljedice (ishod)**            | Korisnik je prijavljen (ima valjan token) ili odjavljen.                                                                                                                                                                                                                  |
 
-**Odabir razine detalja:** Oba primjera koriste ista polja. UC-001 je kratak jer je glavna iznimka jasna; UC-002 zahtijeva numerirane korake i alternative jer oni mijenjaju ishod i mogu usmjeravati ispitivanje.Pri prilagodbi primjera koristite ID-ove zahtjeva i ponašanje vlastite aplikacije.
+### UC-006: Uređivanje profila i brisanje računa
 
-**UC-005: Moderiranje prijave kriznog događaja.** Ovaj primjer vrijedi samo za projekt u kojem odobreni opseg uključuje moderatorski pregled prijava.
+| Element specifikacije             | Opis                                                                                                                                                                                                 |
+| :-------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                                           |
+| **Povezani zahtjevi**             | F-008, F-023                                                                                                                                                                                         |
+| **Preduvjeti**                    | Korisnik je prijavljen.                                                                                                                                                                              |
+| **Glavni uspješni tok**           | 1. Korisnik otvara svoj profil i mijenja fotografiju ili kratak opis.<br>2. Sustav provjerava duljinu opisa (P-03) i fotografiju (NF-18) i sprema promjene.                                          |
+| **Alternativni tokovi / Iznimke** | **1a — Brisanje računa:** korisnik potvrđuje brisanje; sustav briše osobne podatke, a prijave ostaju uz autora „izbrisani korisnik”.<br>**2a — Neispravan unos:** sustav odbija spremanje uz poruku. |
+| **Posljedice (ishod)**            | Profil je ažuriran ili je račun obrisan.                                                                                                                                                             |
 
-| Polje | Opis |
-| --- | --- |
-| Primarni akter | Moderator (A-05 u primjeru) |
-| ID zahtjeva | F-008 |
-| Preduvjeti, ako postoje | Moderator je prijavljen i ima moderatorske ovlasti; postoji prijava koja čeka pregled. |
-| Glavni tijek | 1. Moderator otvara prijavu koja čeka pregled.<br>2. Aplikacija prikazuje podatke prijave i dostupne moderatorske radnje.<br>3. Moderator odabire odobravanje ili odbijanje.<br>4. Aplikacija provjerava ovlasti, mijenja status prijave i prikazuje novi status. |
-| Alternativni ili neuspješni tijekovi, ako postoje | **3a — Radnja nije potvrđena:** Moderator odustaje od promjene i prijava ostaje nepromijenjena.<br>**4a — Ovlasti nisu valjane:** Aplikacija odbija promjenu i status prijave ostaje nepromijenjen. |
-| Rezultat | Prijava ima novi status ako je moderatorska radnja uspješno provedena; inače ostaje nepromijenjena. |
-</details>
+### UC-007: Upravljanje omiljenim lokacijama i pregled „Lokacije”
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                             |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                                                                                                                       |
+| **Povezani zahtjevi**             | F-024, F-025                                                                                                                                                                                                                                                                     |
+| **Preduvjeti**                    | Korisnik je prijavljen.                                                                                                                                                                                                                                                          |
+| **Glavni uspješni tok**           | 1. Korisnik odabire točku na karti ili traži mjesto i upisuje naziv lokacije.<br>2. Sustav sprema lokaciju.<br>3. Korisnik otvara pregled „Lokacije”.<br>4. Sustav za svaku lokaciju prikazuje mjerenja najbliže postaje s udaljenošću, prognozu i aktivna upozorenja za regiju. |
+| **Alternativni tokovi / Iznimke** | **2a — Dosegnut najveći broj lokacija (P-04):** sustav ne sprema lokaciju i prikazuje poruku.<br>**4a — Nema upozorenja:** uz lokaciju piše „Nema aktivnih upozorenja”.                                                                                                          |
+| **Posljedice (ishod)**            | Omiljena lokacija je spremljena i vidljiva samo korisniku (NF-21).                                                                                                                                                                                                               |
+
+### UC-008: Postavljanje pravila obavijesti
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| :-------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Povezani zahtjevi**             | F-024, F-028, F-029                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Preduvjeti**                    | Korisnik je prijavljen i ima barem jednu omiljenu lokaciju.                                                                                                                                                                                                                                                                                                                                                                          |
+| **Glavni uspješni tok**           | 1. Korisnik otvara postavke obavijesti.<br>2. Sustav prikazuje postojeća pravila i omiljene lokacije.<br>3. Korisnik odabire „Novo pravilo” i omiljenu lokaciju.<br>4. Korisnik odabire vrstu pravila: upozorenje DHMZ-a s najnižom razinom (narančasta ili crvena) ili potvrđena prijava s vrstom pojave i polumjerom.<br>5. Korisnik sprema pravilo.<br>6. Sustav provjerava i pohranjuje pravilo; od tada ga provjerava u UC-029. |
+| **Alternativni tokovi / Iznimke** | **2a — Korisnik nema omiljenih lokacija:** sustav nudi dodavanje lokacije (UC-007).<br>**4a — Polumjer izvan raspona P-05:** sustav traži ispravak.<br>**6a — Isto pravilo već postoji:** sustav ne stvara duplikat i o tome obavještava korisnika.                                                                                                                                                                                  |
+| **Posljedice (ishod)**            | Pravilo je spremljeno; korisnik dobiva obavijest kad se uvjet ispuni.                                                                                                                                                                                                                                                                                                                                                                |
+
+### UC-009: Pregled obavijesti
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                            |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                                                                                                                      |
+| **Povezani zahtjevi**             | F-030, F-031                                                                                                                                                                                                                                                                    |
+| **Preduvjeti**                    | Korisnik je prijavljen.                                                                                                                                                                                                                                                         |
+| **Glavni uspješni tok**           | 1. Korisnik vidi crvenu oznaku s brojem nepročitanih obavijesti i otvara pregled „Obavijesti”.<br>2. Sustav prikazuje obavijesti od najnovije.<br>3. Korisnik otvara obavijest; sustav je označava pročitanom, smanjuje broj i otvara povezanu prijavu, događaj ili upozorenje. |
+| **Alternativni tokovi / Iznimke** | **3a — Povezana prijava je u međuvremenu odbijena ili obrisana:** sustav prikazuje poruku da sadržaj više nije dostupan.                                                                                                                                                        |
+| **Posljedice (ishod)**            | Obavijest je označena kao pročitana.                                                                                                                                                                                                                                            |
+
+### UC-010: Predaja prijave opažanja
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| :-------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik (inačica: A-03 Pouzdani motritelj)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Povezani zahtjevi**             | F-033 – F-038, F-044, F-046, F-058, F-059                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Preduvjeti**                    | Korisnik je prijavljen, nema zabranu objavljivanja i nije premašio ograničenje broja prijava (NF-17).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Glavni uspješni tok**           | 1. Korisnik odabire „Nova prijava”.<br>2. Sustav prikazuje obrazac s unaprijed popunjenim vremenom opažanja i lokacijom dobivenom putem GPS-a.<br>3. Korisnik odabire vrstu pojave.<br>4. Sustav prikazuje ljestvicu intenziteta za odabranu vrstu (za tuču: grašak, lješnjak, orah, jaje).<br>5. Korisnik odabire intenzitet i procjenu štete, dodaje jednu ili više fotografija i po želji opis.<br>6. Korisnik potvrđuje predaju.<br>7. Sustav provjerava obavezne podatke, vrijeme opažanja (PR-12) i fotografije (NF-18).<br>8. Sustav pohranjuje prijavu u stanju „predana” i prikazuje potvrdu zaprimanja.<br>9. Sustav uklanja EXIF metapodatke, pridružuje mjerenje najbliže postaje (PR-11) i pridružuje prijavu događaju (PR-06).<br>10. Sustav postavlja stanje „na čekanju” i prikazuje prijavu ostalim registriranim korisnicima i moderatoru regije.                                                                                                    |
+| **Alternativni tokovi / Iznimke** | **2a — Pristup lokaciji nije dopušten ili GPS nije dostupan:** sustav traži odabir lokacije na karti; tok se nastavlja u koraku 3.<br>**7a — Nedostaje obavezan podatak ili je vrijeme opažanja izvan dopuštenog raspona:** sustav označava polja, zadržava unos i ne pohranjuje prijavu; korisnik ispravlja i ponavlja korak 6.<br>**7b — Fotografija nije podržanog formata ili je prevelika:** sustav je odbija uz poruku i zadržava ostale podatke.<br>**7c — Zabrana objavljivanja ili premašeno ograničenje:** sustav odbija predaju uz poruku.<br>**8a — Pohrana nije uspjela:** sustav prikazuje obavijest o neuspjehu, ne prikazuje lažnu potvrdu i zadržava unos za ponovni pokušaj.<br>**9a — Nema mjerenja postaje unutar P-12 i P-13:** uz prijavu piše „Nema službenog mjerenja za vrijeme opažanja”.<br>**10a — Autor je pouzdani motritelj:** sustav postavlja stanje „potvrđena”, označava prijavu posebnom oznakom i ne stavlja je u red moderacije. |
+| **Posljedice (ishod)**            | Prijava je trajno pohranjena (NF-10) u stanju „na čekanju” ili „potvrđena”; autor je vidi na pregledu „Prijave”, a ostali korisnici na karti prema PR-10. Pratitelji autora i lokacije dobivaju obavijest (F-030).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+### UC-011: Pregled vlastitih prijava
+
+| Element specifikacije             | Opis                                                                                                                                                |
+| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                          |
+| **Povezani zahtjevi**             | F-038, F-046 – F-048                                                                                                                                |
+| **Preduvjeti**                    | Korisnik je prijavljen.                                                                                                                             |
+| **Glavni uspješni tok**           | 1. Korisnik otvara pregled „Prijave”.<br>2. Sustav prikazuje sve njegove prijave od najnovije, sa stanjem uz svaku; potvrđene imaju oznaku potvrde. |
+| **Alternativni tokovi / Iznimke** | **2a — Prijava je odbijena:** uz prijavu je prikazano obrazloženje moderatora; drugi korisnici je ne vide (F-047).                                  |
+| **Posljedice (ishod)**            | Podaci se ne mijenjaju.                                                                                                                             |
+
+### UC-012: Potvrda ili osporavanje prijave
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Povezani zahtjevi**             | F-039 – F-041, F-056                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Preduvjeti**                    | Korisnik je prijavljen; prijava je u stanju „na čekanju” ili „potvrđena”; korisnik nije autor prijave.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Glavni uspješni tok**           | 1. Korisnik otvara prijavu na karti, na stranici događaja ili iz obavijesti.<br>2. Sustav prikazuje prijavu s fotografijama, mjerenjem najbliže postaje, brojem potvrda i osporavanja te ocjenom vjerodostojnosti.<br>3. Korisnik odabire „I ja to vidim” ili „Kod mene nije tako”.<br>4. Sustav bilježi glas.<br>5. Sustav ponovno izračunava ocjenu vjerodostojnosti (PR-05) i ažurira reputaciju autora (PR-07).<br>6. Sustav prikazuje novu ocjenu i broj glasova svim korisnicima koji imaju prijavu otvorenu. |
+| **Alternativni tokovi / Iznimke** | **3a — Korisnik nije prijavljen:** sustav ga pri pokušaju glasanja preusmjerava na prijavu u sustav.<br>**3b — Korisnik je autor prijave:** gumbi za glasanje nisu dostupni.<br>**3c — Korisnik je već glasao:** odabir drugog gumba mijenja glas, a ponovni odabir istog gumba povlači glas (PR-04).<br>**4a — Prijava je u međuvremenu odbijena ili obrisana:** sustav ne bilježi glas i obavještava korisnika.                                                                                                   |
+| **Posljedice (ishod)**            | Glas je zabilježen, a ocjena vjerodostojnosti i reputacija autora su ažurirane.                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+### UC-013: Komentiranje prijave
+
+| Element specifikacije             | Opis                                                                                                                                                            |
+| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                      |
+| **Povezani zahtjevi**             | F-042                                                                                                                                                           |
+| **Preduvjeti**                    | Korisnik je prijavljen i nema zabranu objavljivanja; prijava mu je vidljiva.                                                                                    |
+| **Glavni uspješni tok**           | 1. Korisnik upisuje komentar uz prijavu i objavljuje ga.<br>2. Sustav sprema komentar s autorom i vremenom i prikazuje ga ostalim korisnicima bez osvježavanja. |
+| **Alternativni tokovi / Iznimke** | **1a — Komentar je dulji od P-17 ili je premašeno ograničenje (NF-17):** sustav odbija objavu uz poruku.                                                        |
+| **Posljedice (ishod)**            | Komentar je objavljen.                                                                                                                                          |
+
+### UC-014: Prijava neprimjerenog sadržaja
+
+| Element specifikacije             | Opis                                                                                                                                 |
+| :-------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                           |
+| **Povezani zahtjevi**             | F-043                                                                                                                                |
+| **Preduvjeti**                    | Korisnik je prijavljen; sadržaj (prijava ili komentar) mu je vidljiv.                                                                |
+| **Glavni uspješni tok**           | 1. Korisnik odabire „Prijavi sadržaj” i razlog.<br>2. Sustav bilježi prijavu sadržaja i stavlja je u red moderatora regije (UC-019). |
+| **Alternativni tokovi / Iznimke** | **2a — Korisnik je već prijavio isti sadržaj:** sustav ne bilježi duplikat.                                                          |
+| **Posljedice (ishod)**            | Sadržaj je u redu za obradu moderatora.                                                                                              |
+
+### UC-015: Pregled stranice događaja
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                 |
+| :-------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                                                                           |
+| **Povezani zahtjevi**             | F-044, F-045                                                                                                                                                                                                                         |
+| **Preduvjeti**                    | Postoji događaj (barem P-19 prijava grupiranih prema PR-06).                                                                                                                                                                         |
+| **Glavni uspješni tok**           | 1. Korisnik otvara događaj (npr. „Tuča, Đakovo, 14. 7. 2026.”) s karte ili iz prijave.<br>2. Sustav prikazuje stručni komentar meteorologa na vrhu, a zatim sve prijave, fotografije i raspravu koje korisnik smije vidjeti (PR-10). |
+| **Alternativni tokovi / Iznimke** | **2a — Gledatelj je posjetitelj:** prikazuju se samo potvrđene prijave.                                                                                                                                                              |
+| **Posljedice (ishod)**            | Podaci se ne mijenjaju.                                                                                                                                                                                                              |
+
+### UC-016: Praćenje korisnika ili lokacije
+
+| Element specifikacije             | Opis                                                                                                                                                                               |
+| :-------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                         |
+| **Povezani zahtjevi**             | F-026, F-027, F-030                                                                                                                                                                |
+| **Preduvjeti**                    | Korisnik je prijavljen.                                                                                                                                                            |
+| **Glavni uspješni tok**           | 1. Korisnik na profilu drugog korisnika ili na karti odabire „Prati” (za lokaciju i polumjer).<br>2. Sustav sprema praćenje i od tada šalje obavijesti o novim prijavama (UC-029). |
+| **Alternativni tokovi / Iznimke** | **1a — Polumjer izvan raspona P-05:** sustav traži ispravak.<br>**1b — Prekid praćenja:** korisnik odabire „Prestani pratiti”; obavijesti se više ne šalju.                        |
+| **Posljedice (ishod)**            | Praćenje je spremljeno ili prekinuto.                                                                                                                                              |
+
+### UC-017: Pregled statistike i izvoz CSV
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                                         |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-02 Registrirani korisnik                                                                                                                                                                                                                                                                   |
+| **Povezani zahtjevi**             | F-062 – F-064                                                                                                                                                                                                                                                                                |
+| **Preduvjeti**                    | Korisnik je prijavljen (pitanje O-13).                                                                                                                                                                                                                                                       |
+| **Glavni uspješni tok**           | 1. Korisnik otvara pregled „Statistika” i odabire vrstu pojave, regiju i razdoblje.<br>2. Sustav prikazuje arhivu događaja i grafikon učestalosti po regijama i mjesecima s tablicom istih vrijednosti.<br>3. Korisnik odabire izvoz; sustav izrađuje datoteku CSV s istim zapisima (NF-32). |
+| **Alternativni tokovi / Iznimke** | **2a — Nema događaja za filtar:** sustav prikazuje poruku i ne nudi prazan izvoz.                                                                                                                                                                                                            |
+| **Posljedice (ishod)**            | Podaci se ne mijenjaju; korisnik ima izvezenu datoteku. Odbijene prijave nisu uključene.                                                                                                                                                                                                     |
+
+### UC-018: Moderacija prijava na čekanju
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| :-------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-04 Moderator                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Povezani zahtjevi**             | F-046 – F-051, F-053, F-056                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Preduvjeti**                    | Korisnik je prijavljen s ulogom moderatora za barem jednu regiju.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Glavni uspješni tok**           | 1. Moderator otvara pregled „Moderacija”.<br>2. Sustav prikazuje prijave na čekanju iz regija moderatora, poredane po vremenu predaje, uz ocjenu vjerodostojnosti.<br>3. Moderator odabire prijavu.<br>4. Sustav prikazuje fotografije, opis, mjerenje najbliže postaje, glasove, komentare i aktivna upozorenja DHMZ-a za regiju.<br>5. Moderator odabire „Potvrdi”.<br>6. Sustav provjerava ovlasti i regiju, postavlja stanje „potvrđena”, bilježi moderatora i vrijeme, ažurira reputaciju autora i ističe prijavu oznakom potvrde.<br>7. Sustav obavještava autora i korisnike čija su pravila obavijesti ispunjena (UC-029).                         |
+| **Alternativni tokovi / Iznimke** | **2a — Nema prijava na čekanju:** sustav prikazuje „Nema prijava na čekanju”.<br>**5a — Odbijanje:** moderator odabire „Odbij”; sustav traži obrazloženje (PR-13), postavlja stanje „odbijena”, skriva prijavu prema PR-10 i autoru šalje obrazloženje.<br>**5b — Brisanje:** moderator odabire „Obriši” i potvrđuje; sustav uklanja prijavu (F-053).<br>**5c — Moderator odustaje:** vraća se na popis; prijava ostaje na čekanju.<br>**6a — Drugi moderator je u međuvremenu obradio prijavu:** sustav o tome obavještava i osvježava popis.<br>**6b — Prijava je izvan regije moderatora:** sustav odbija radnju (NF-14); stanje ostaje nepromijenjeno. |
+| **Posljedice (ishod)**            | Prijava je potvrđena (vidljiva posjetiteljima) ili odbijena (vidljiva samo autoru, moderatorima i administratoru); autor je obaviješten.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+
+### UC-019: Obrada prijavljenog sadržaja
+
+| Element specifikacije             | Opis                                                                                                                                                                                                    |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Primarni akter**                | A-04 Moderator                                                                                                                                                                                          |
+| **Povezani zahtjevi**             | F-052, F-053                                                                                                                                                                                            |
+| **Preduvjeti**                    | Moderator je prijavljen; postoji prijavljeni sadržaj iz njegove regije.                                                                                                                                 |
+| **Glavni uspješni tok**           | 1. Moderator na pregledu „Moderacija” otvara prijavljeni sadržaj s razlozima i brojem prijava.<br>2. Moderator briše sadržaj ili odbacuje prijavu sadržaja kao neosnovanu.<br>3. Sustav provodi odluku. |
+| **Alternativni tokovi / Iznimke** | **2a — Uz brisanje potrebna je i sankcija:** moderator nastavlja u UC-020.                                                                                                                              |
+| **Posljedice (ishod)**            | Sadržaj je obrisan (vidljiv samo administratoru) ili ostaje objavljen, a prijava sadržaja je zatvorena.                                                                                                 |
+
+### UC-020: Sankcioniranje korisnika
+
+| Element specifikacije             | Opis                                                                                                                                                                             |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-04 Moderator                                                                                                                                                                   |
+| **Povezani zahtjevi**             | F-054, F-055                                                                                                                                                                     |
+| **Preduvjeti**                    | Moderator je prijavljen.                                                                                                                                                         |
+| **Glavni uspješni tok**           | 1. Moderator na profilu korisnika odabire „Upozori” ili „Zabrani objavljivanje” s trajanjem (P-16).<br>2. Sustav bilježi sankciju uz račun i šalje korisniku obavijest (UC-029). |
+| **Alternativni tokovi / Iznimke** | **2a — Istek zabrane:** sustav ukida zabranu bez ručne radnje.                                                                                                                   |
+| **Posljedice (ishod)**            | Korisnik je upozoren ili tijekom zabrane ne može predavati prijave ni komentare (PR-14).                                                                                         |
+
+### UC-021: Dodjela uloge pouzdanog motritelja
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                 |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-04 Moderator                                                                                                                                                                                                       |
+| **Povezani zahtjevi**             | F-056 – F-059                                                                                                                                                                                                        |
+| **Preduvjeti**                    | Moderator je prijavljen; korisnik ima reputaciju ≥ P-10.                                                                                                                                                             |
+| **Glavni uspješni tok**           | 1. Moderator otvara profil korisnika s reputacijom i odabire „Dodijeli ulogu pouzdanog motritelja”.<br>2. Sustav dodjeljuje ulogu; od tada se prijave tog korisnika potvrđuju bez moderacije i imaju posebnu oznaku. |
+| **Alternativni tokovi / Iznimke** | **1a — Reputacija je ispod praga:** mogućnost nije dostupna.                                                                                                                                                         |
+| **Posljedice (ishod)**            | Korisnik ima ulogu pouzdanog motritelja.                                                                                                                                                                             |
+
+### UC-022: Objava stručnog komentara uz događaj
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                        |
+| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-05 Meteorolog                                                                                                                                                                                                             |
+| **Povezani zahtjevi**             | F-060                                                                                                                                                                                                                       |
+| **Preduvjeti**                    | Meteorolog je prijavljen; događaj postoji.                                                                                                                                                                                  |
+| **Glavni uspješni tok**           | 1. Meteorolog na stranici događaja upisuje stručni komentar (npr. o smjeru kretanja olujne ćelije).<br>2. Sustav sprema komentar i prikazuje ga svim korisnicima istaknuto na vrhu stranice događaja, s imenom meteorologa. |
+| **Alternativni tokovi / Iznimke** | **2a — Korisnik nema ulogu meteorologa:** sustav odbija zahtjev (NF-14).                                                                                                                                                    |
+| **Posljedice (ishod)**            | Stručni komentar je objavljen uz događaj.                                                                                                                                                                                   |
+
+### UC-023: Označavanje stručno vrijednih prijava
+
+| Element specifikacije             | Opis                                                                                                                                     |
+| :-------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-05 Meteorolog                                                                                                                          |
+| **Povezani zahtjevi**             | F-061                                                                                                                                    |
+| **Preduvjeti**                    | Meteorolog je prijavljen.                                                                                                                |
+| **Glavni uspješni tok**           | 1. Meteorolog uz prijavu odabire „Vrijedno za analizu”.<br>2. Sustav dodaje oznaku; prijava se može izdvojiti filtrom u arhivi i izvozu. |
+| **Alternativni tokovi / Iznimke** | **1a — Uklanjanje oznake:** meteorolog ponovno odabire istu radnju.                                                                      |
+| **Posljedice (ishod)**            | Prijava ima ili nema stručnu oznaku.                                                                                                     |
+
+### UC-024: Upravljanje korisnicima i ulogama
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                      |
+| :-------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-06 Administrator                                                                                                                                                                                                                        |
+| **Povezani zahtjevi**             | F-065, F-066                                                                                                                                                                                                                              |
+| **Preduvjeti**                    | Administrator je prijavljen. Prvi administratorski račun stvara se pri postavljanju sustava.                                                                                                                                              |
+| **Glavni uspješni tok**           | 1. Administrator traži korisnika po korisničkom imenu, e-pošti ili ulozi.<br>2. Administrator dodjeljuje ili oduzima ulogu moderatora (s regijom) ili meteorologa.<br>3. Sustav sprema promjenu; vrijedi od sljedećeg zahtjeva korisnika. |
+| **Alternativni tokovi / Iznimke** | **2a — Moderator bez regije:** sustav ne dopušta dodjelu dok se ne odabere barem jedna regija.                                                                                                                                            |
+| **Posljedice (ishod)**            | Uloge korisnika su ažurirane.                                                                                                                                                                                                             |
+
+### UC-025: Podešavanje parametara preuzimanja DHMZ-a
+
+| Element specifikacije             | Opis                                                                                                                                                                                                |
+| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-06 Administrator                                                                                                                                                                                  |
+| **Povezani zahtjevi**             | F-067                                                                                                                                                                                               |
+| **Preduvjeti**                    | Administrator je prijavljen.                                                                                                                                                                        |
+| **Glavni uspješni tok**           | 1. Administrator mijenja interval preuzimanja, adresu izvora ili uključuje i isključuje pojedini izvor.<br>2. Sustav sprema promjenu i primjenjuje je od sljedećeg ciklusa bez ponovnog pokretanja. |
+| **Alternativni tokovi / Iznimke** | **2a — Interval kraći od 10 min:** sustav odbija promjenu (PR-17).                                                                                                                                  |
+| **Posljedice (ishod)**            | Parametri preuzimanja su ažurirani.                                                                                                                                                                 |
+
+### UC-026: Pregled statistike korištenja
+
+| Element specifikacije             | Opis                                                                                                                                                    |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Primarni akter**                | A-06 Administrator                                                                                                                                      |
+| **Povezani zahtjevi**             | F-013, F-068                                                                                                                                            |
+| **Preduvjeti**                    | Administrator je prijavljen.                                                                                                                            |
+| **Glavni uspješni tok**           | 1. Administrator odabire razdoblje.<br>2. Sustav prikazuje broj registriranih i aktivnih korisnika, broj prijava po stanju i ishode preuzimanja DHMZ-a. |
+| **Alternativni tokovi / Iznimke** | —                                                                                                                                                       |
+| **Posljedice (ishod)**            | Podaci se ne mijenjaju.                                                                                                                                 |
+
+### UC-027: Brisanje sadržaja i deaktivacija računa
+
+| Element specifikacije             | Opis                                                                                                                                    |
+| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-06 Administrator                                                                                                                      |
+| **Povezani zahtjevi**             | F-069, F-070                                                                                                                            |
+| **Preduvjeti**                    | Administrator je prijavljen.                                                                                                            |
+| **Glavni uspješni tok**           | 1. Administrator odabire sadržaj ili korisnički račun i radnju „Obriši” ili „Deaktiviraj”.<br>2. Sustav traži potvrdu i provodi radnju. |
+| **Alternativni tokovi / Iznimke** | **2a — Administrator odustaje:** ništa se ne mijenja.                                                                                   |
+| **Posljedice (ishod)**            | Obrisani sadržaj nije vidljiv nijednom korisniku; deaktivirani korisnik ne može se prijaviti, a njegovi tokeni prestaju vrijediti.      |
+
+### UC-028: Periodičko preuzimanje podataka DHMZ-a
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| :-------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | A-07 Vremenski okidač; sekundarni: A-08 DHMZ                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Povezani zahtjevi**             | F-009 – F-013, F-028                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Preduvjeti**                    | Adrese izvora i interval preuzimanja su postavljeni; prošao je interval P-06 od prethodnog preuzimanja.                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Glavni uspješni tok**           | 1. Vremenski okidač pokreće preuzimanje.<br>2. Sustav za svaki uključeni izvor (mjerenja, prognoze, upozorenja) šalje zahtjev DHMZ-u.<br>3. DHMZ vraća XML dokument.<br>4. Sustav provjerava i raščlanjuje XML.<br>5. Sustav pohranjuje nove podatke, uz čuvanje povijesti mjerenja.<br>6. Sustav bilježi ishod preuzimanja (F-013).<br>7. Za nova ili pojačana upozorenja sustav pokreće slanje obavijesti (UC-029).<br>8. Sustav prikazuje osvježene podatke korisnicima koji imaju otvorenu kartu. |
+| **Alternativni tokovi / Iznimke** | **1a — Prethodno preuzimanje još traje:** novo se ne pokreće.<br>**3a — Izvor nije dostupan ili vraća pogrešku:** sustav ponavlja zahtjev prema NF-08, a nakon neuspjeha bilježi pogrešku i zadržava postojeće podatke.<br>**4a — XML je neispravan ili promijenjene strukture:** sustav ne mijenja podatke tog izvora i bilježi pogrešku (NF-09).<br>**4b — Podaci nisu noviji od pohranjenih:** sustav ih ne pohranjuje ponovno.                                                                    |
+| **Posljedice (ishod)**            | Baza sadrži najnovije dostupne podatke DHMZ-a ili je zabilježen razlog neuspjeha; korisnici za to vrijeme rade s posljednjim pohranjenim podacima.                                                                                                                                                                                                                                                                                                                                                    |
+
+### UC-029: Slanje obavijesti
+
+| Element specifikacije             | Opis                                                                                                                                                                                                                                             |
+| :-------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primarni akter**                | Nema izravnog aktera; uključen je u UC-018 i UC-028. Isto ponašanje pokreću i nova prijava (za pratitelje, UC-010) i sankcija (UC-020). Sekundarni: A-10 Poslužitelj e-pošte                                                                     |
+| **Povezani zahtjevi**             | F-028 – F-032                                                                                                                                                                                                                                    |
+| **Preduvjeti**                    | Dogodila se promjena koja može ispuniti pravilo obavijesti: novo upozorenje, potvrđena prijava, nova prijava praćenog korisnika ili lokacije, odluka moderatora.                                                                                 |
+| **Glavni uspješni tok**           | 1. Sustav pronalazi korisnike čija su pravila ili praćenja ispunjena promjenom.<br>2. Sustav za svakog korisnika stvara jednu obavijest na pregledu „Obavijesti” i povećava broj nepročitanih.<br>3. Sustav predaje poruku poslužitelju e-pošte. |
+| **Alternativni tokovi / Iznimke** | **2a — Ista promjena ispunjava više pravila istog korisnika:** stvara se jedna obavijest.<br>**3a — Slanje e-pošte nije uspjelo:** obavijest ostaje u aplikaciji, a slanje se ponavlja.                                                          |
+| **Posljedice (ishod)**            | Korisnici imaju obavijest u aplikaciji (unutar 60 s) i poruku e-pošte (predanu unutar 2 min, NF-04).                                                                                                                                             |
 
 ---
 
 ## 3.3 Provjera dosljednosti obrazaca uporabe
 
-**Cilj:** Provjeriti međusobnu usklađenost obrazaca uporabe, aktera, zahtjeva i ispitnih slučajeva. Cjelovito mapiranje održava se isključivo u **[matrici sljedivosti zahtjeva](2-Analiza-zahtjeva.md#26-sljedivost-zahtjeva)**.
-
-| Provjera | Pitanje za tim |
-| --- | --- |
-| Zahtjev | Je li svaki važan obrazac uporabe povezan s postojećim zahtjevom? |
-| Akter | Odgovara li akter naveden ovdje prethodno utvrđenoj ulozi i dopuštenoj interakciji? |
-| Aplikacija | Može li tim demonstrirati opisani glavni rezultat i važnu alternativu ili je opis jasno označen kao trenutačno oblikovanje? |
+| Provjera   | Pitanje za tim                                                                                                              | Rezultat provjere                                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Zahtjev    | Je li svaki važan obrazac uporabe povezan s postojećim zahtjevom?                                                           | Da: svih 29 obrazaca uporabe navodi postojeće zahtjeve iz 2.1.                                                 |
+| Akter      | Odgovara li akter naveden ovdje prethodno utvrđenoj ulozi i dopuštenoj interakciji?                                         | Da: primarni akteri su A-01 – A-07 iz 2.3; dionici D-01 – D-03 nisu akteri.                                    |
+| Aplikacija | Može li tim demonstrirati opisani glavni rezultat i važnu alternativu ili je opis jasno označen kao trenutačno oblikovanje? | Ne još: aplikacija nije izgrađena, pa su svi opisi **trenutačno oblikovanje**. Ažuriraju se nakon Iteracije 1. |
 
 ---
-
-Povezivanje zahtjev → obrazac uporabe → ispitivanje održavajte **samo jednom, u [tablici sljedivosti zahtjeva](./2-Analiza-zahtjeva.md)**. Ovdje nemojte održavati drugu projektnu tablicu mapiranja ni stupac sa statusom implementacije. Ako važan zahtjev nema interakciju s ljudskim akterom, objasnite gdje se obrađuje umjesto izmišljanja aktera.
-
-<details>
-<summary><strong>Provjera pokrivenosti zahtjeva</strong></summary>
-
-**Primjer — CrisisMap:** Tablica pokrivenosti obrazaca uporabe koju treba analizirati:
-
-| Broj obrasca uporabe | Naziv obrasca uporabe | Obuhvaćeni funkcijski zahtjevi |
-| --- | --- | --- |
-| UC-001 | Registracija računa | F-001: Registracija računa putem e-pošte |
-| UC-002 | Prijava kriznog događaja | F-022: Prijava i provjera kriznog događaja |
-| UC-003 | Sustav upozorenja | F-045: Slanje upozorenja korisnicima i timovima |
-| UC-004 | Koordinacija spašavanja | F-067: Koordinacija s hitnim službama |
-
----
-
-**Problemi pokrivenosti koje treba riješiti:**
-
-- **Pogrešan ID zahtjeva:** ova tablica povezuje UC-002 s F-022, dok se opis UC-002 u odjeljku 3.2 poziva na F-004, zahtjev za podnošenje prijave iz odjeljka 2.1.
-- **Zahtjevi koji ne postoje:** F-022, F-045 i F-067 nisu definirani u oglednim zahtjevima u 2.1.
-- **Obrasci uporabe bez opisa:** UC-003 i UC-004 nemaju opis u 3.2. UC-004 (koordinacija s hitnim službama) ujedno je mogućnost s vanjskim posljedicama koju opseg dopušta samo ako je uključena u odobreni zadatak.
-- **Nesklad aktera:** primjer aktera u odjeljku 2.3 navodi da koordinator pomoći podnosi prijave (F-004), dok UC-002 kao primarnog aktera navodi građanina.
-
-</details>
-
-**Završna provjera:** Dijagram, specifikacije obrazaca uporabe i matrica sljedivosti međusobno su usklađeni. Svaki važan obrazac uporabe povezan je s postojećim zahtjevom, akteri odgovaraju stvarnim ulogama u aplikaciji, a opisani glavni i alternativni tijekovi odgovaraju ponašanju koje sustav stvarno podržava.
