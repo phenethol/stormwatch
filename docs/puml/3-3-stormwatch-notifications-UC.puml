@@ -1,0 +1,76 @@
+' ==============================================================================
+' 3-3-stormwatch-notifications-UC.puml
+'
+' Svrha:    Obavijesti i praćenje: pravila obavijesti, praćenje korisnika i
+'           lokacija, pregled obavijesti i njihovo slanje.
+' Autor:    Tim G08 (StormWatch)
+' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
+'           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
+' Zahtjevi: F-018 – F-020; UC-012 – UC-015
+'
+' Diagram level: System Requirements
+' Diagram type:  Use Case Diagram
+' Version:       3.0
+' ==============================================================================
+
+@startuml
+!pragma layout smetana
+title Sustav StormWatch – obavijesti i praćenje
+left to right direction
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #212529
+
+skinparam actor {
+    BackgroundColor #F8F9FA
+    BorderColor #212529
+    BackgroundColor<<external system>> #FFF3CD
+    BorderColor<<external system>> #856404
+}
+
+skinparam usecase {
+    BackgroundColor #E7F1FF
+    BorderColor #0D6EFD
+}
+
+' ==============================================================================
+' Akteri
+' ==============================================================================
+
+actor User as "Registrirani\nkorisnik"
+
+actor "Poslužitelj\ne-pošte" as Mail <<external system>>
+
+' ==============================================================================
+' Granica sustava
+' ==============================================================================
+
+rectangle "Sustav StormWatch" {
+
+    (UC-012\nPostavljanje pravila\nobavijesti) as UC_Rules
+    (UC-013\nPraćenje korisnika\nili lokacije) as UC_Follow
+    (UC-014\nPregled obavijesti) as UC_Notifications
+
+    ' Sustavski obrazac uporabe: provjerava pravila i praćenja iz UC-012 i
+    ' UC-013 te stvara obavijesti koje korisnik vidi u UC-014.
+    (UC-015\nSlanje obavijesti) as UC_Send
+}
+
+note left of UC_Send
+  Nema izravnog aktera: uključen je u UC-016
+  (Slika 3.4) i UC-023 (Slika 3.5), a pokreću
+  ga i nova prijava (UC-006) i sankcija (UC-017).
+end note
+
+' ==============================================================================
+' Asocijacije
+' ==============================================================================
+
+User -- UC_Rules
+User -- UC_Follow
+User -- UC_Notifications
+
+UC_Send -- Mail
+
+@enduml

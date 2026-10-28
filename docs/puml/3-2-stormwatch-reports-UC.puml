@@ -1,0 +1,80 @@
+' ==============================================================================
+' 3-2-stormwatch-reports-UC.puml
+'
+' Svrha:    Prijave opažanja i zajednička provjera: predaja prijave, glasanje,
+'           komentari, događaji i statistika.
+' Autor:    Tim G08 (StormWatch)
+' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
+'           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
+' Zahtjevi: F-009 – F-017; UC-006 – UC-011
+'
+' Diagram level: System Requirements
+' Diagram type:  Use Case Diagram
+' Version:       3.0
+' ==============================================================================
+
+@startuml
+!pragma layout smetana
+title Sustav StormWatch – prijave i zajednička provjera
+left to right direction
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #212529
+
+skinparam actor {
+    BackgroundColor #F8F9FA
+    BorderColor #212529
+}
+
+skinparam usecase {
+    BackgroundColor #E7F1FF
+    BorderColor #0D6EFD
+}
+
+' ==============================================================================
+' Akteri
+' ==============================================================================
+
+actor User as "Registrirani\nkorisnik"
+actor Trusted as "Pouzdani\nmotritelj"
+
+Trusted --|> User
+
+' Pouzdani motritelj nema vlastitih obrazaca uporabe: koristi UC-006 kao
+' registrirani korisnik, a razlika (prijava bez moderacije) je alternativni tok.
+note bottom of Trusted
+  Predaje prijave kao registrirani
+  korisnik (UC-006), ali one ne
+  prolaze moderaciju (tok 7a).
+end note
+
+' ==============================================================================
+' Granica sustava
+' ==============================================================================
+
+rectangle "Sustav StormWatch" {
+
+    ' Prijave i zajednička provjera
+    (UC-006\nPredaja prijave opažanja) as UC_Report
+    (UC-007\nPotvrda ili osporavanje\nprijave) as UC_Vote
+    (UC-008\nKomentiranje prijave) as UC_Comment
+    (UC-009\nPrijava neprimjerenog\nsadržaja) as UC_Flag
+
+    ' Događaji i arhiva
+    (UC-010\nPregled stranice događaja) as UC_Event
+    (UC-011\nStatistika i izvoz CSV) as UC_Stats
+}
+
+' ==============================================================================
+' Asocijacije
+' ==============================================================================
+
+User -- UC_Report
+User -- UC_Vote
+User -- UC_Comment
+User -- UC_Flag
+User -- UC_Event
+User -- UC_Stats
+
+@enduml
