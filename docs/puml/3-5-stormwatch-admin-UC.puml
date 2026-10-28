@@ -1,0 +1,80 @@
+' ==============================================================================
+' 3-5-stormwatch-admin-UC.puml
+'
+' Svrha:    Administracija i podaci DHMZ-a: upravljanje korisnicima, ulogama i
+'           sadržajem te periodičko preuzimanje službenih podataka.
+' Autor:    Tim G08 (StormWatch)
+' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
+'           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
+' Zahtjevi: F-026 – F-030; UC-020 – UC-023
+'
+' Diagram level: System Requirements
+' Diagram type:  Use Case Diagram
+' Version:       3.0
+' ==============================================================================
+
+@startuml
+!pragma layout smetana
+title Sustav StormWatch – administracija i podaci DHMZ-a
+left to right direction
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #212529
+
+skinparam actor {
+    BackgroundColor #F8F9FA
+    BorderColor #212529
+    BackgroundColor<<external system>> #FFF3CD
+    BorderColor<<external system>> #856404
+}
+
+skinparam usecase {
+    BackgroundColor #E7F1FF
+    BorderColor #0D6EFD
+}
+
+' ==============================================================================
+' Akteri
+' ==============================================================================
+
+actor User as "Registrirani\nkorisnik"
+actor Admin as "Administrator"
+actor Timer as "Vremenski\nokidač"
+
+User <|-- Admin
+
+actor "DHMZ" as DHMZ <<external system>>
+
+' ==============================================================================
+' Granica sustava
+' ==============================================================================
+
+rectangle "Sustav StormWatch" {
+
+    ' Administracija
+    (UC-020\nUpravljanje korisnicima\ni sadržajem) as UC_Users
+    (UC-021\nPodešavanje parametara\npreuzimanja) as UC_Params
+    (UC-022\nPregled statistike\nkorištenja) as UC_Usage
+
+    ' Sustavski obrasci uporabe
+    (UC-023\nPeriodičko preuzimanje\npodataka DHMZ-a) as UC_Fetch
+    ' Detaljno na Slici 3.3.
+    (UC-015\nSlanje obavijesti) as UC_Send
+}
+
+' ==============================================================================
+' Asocijacije
+' ==============================================================================
+
+Admin -- UC_Users
+Admin -- UC_Params
+Admin -- UC_Usage
+
+Timer -- UC_Fetch
+UC_Fetch -- DHMZ
+
+' Novo ili pojačano upozorenje uvijek pokreće provjeru pravila obavijesti.
+UC_Fetch ..> UC_Send : <<include>>
+
+@enduml

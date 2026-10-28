@@ -1,0 +1,80 @@
+' ==============================================================================
+' 3-4-stormwatch-moderation-UC.puml
+'
+' Svrha:    Moderacija i stručni sadržaj: regionalna moderacija prijava i
+'           prijavljenog sadržaja, sankcije, pouzdani motritelji i stručni
+'           rad meteorologa.
+' Autor:    Tim G08 (StormWatch)
+' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
+'           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
+' Zahtjevi: F-021 – F-025; UC-016 – UC-019
+'
+' Diagram level: System Requirements
+' Diagram type:  Use Case Diagram
+' Version:       3.0
+' ==============================================================================
+
+@startuml
+!pragma layout smetana
+title Sustav StormWatch – moderacija i stručni sadržaj
+left to right direction
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #212529
+
+skinparam actor {
+    BackgroundColor #F8F9FA
+    BorderColor #212529
+}
+
+skinparam usecase {
+    BackgroundColor #E7F1FF
+    BorderColor #0D6EFD
+}
+
+' ==============================================================================
+' Akteri
+' ==============================================================================
+
+actor User as "Registrirani\nkorisnik"
+actor Moderator as "Moderator"
+actor Meteorologist as "Meteorolog"
+
+' Moderator i meteorolog su registrirani korisnici s dodatnom ulogom.
+User <|-- Moderator
+User <|-- Meteorologist
+
+' ==============================================================================
+' Granica sustava
+' ==============================================================================
+
+rectangle "Sustav StormWatch" {
+
+    ' Moderacija (samo u regijama moderatora)
+    (UC-016\nModeracija) as UC_Moderate
+    (UC-017\nSankcioniranje korisnika) as UC_Sanction
+    (UC-018\nDodjela uloge\npouzdanog motritelja) as UC_Trust
+
+    ' Stručni sadržaj
+    (UC-019\nStručna obrada\ndogađaja) as UC_Expert
+
+    ' Detaljno na Slici 3.3.
+    (UC-015\nSlanje obavijesti) as UC_Send
+}
+
+' ==============================================================================
+' Asocijacije
+' ==============================================================================
+
+Moderator -- UC_Moderate
+Moderator -- UC_Sanction
+Moderator -- UC_Trust
+
+Meteorologist -- UC_Expert
+
+' Odluka moderatora uvijek pokreće obavještavanje autora i korisnika čija su
+' pravila obavijesti ispunjena.
+UC_Moderate ..> UC_Send : <<include>>
+
+@enduml

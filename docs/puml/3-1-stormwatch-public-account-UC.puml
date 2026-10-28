@@ -1,0 +1,82 @@
+' ==============================================================================
+' 3-1-stormwatch-public-account-UC.puml
+'
+' Svrha:    Javni pregledi i korisnički račun: što posjetitelj može bez prijave
+'           u sustav i kako registrirani korisnik upravlja svojim računom.
+'           Registracija i prijava moguće su isključivo Google računom.
+' Autor:    Tim G08 (StormWatch)
+' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
+'           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
+' Zahtjevi: F-001 – F-008; UC-001 – UC-005
+'
+' Diagram level: System Requirements
+' Diagram type:  Use Case Diagram
+' Version:       3.0
+' ==============================================================================
+
+@startuml
+!pragma layout smetana
+title Sustav StormWatch – javni pregledi i korisnički račun
+left to right direction
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #212529
+
+skinparam actor {
+    BackgroundColor #F8F9FA
+    BorderColor #212529
+    BackgroundColor<<external system>> #FFF3CD
+    BorderColor<<external system>> #856404
+}
+
+skinparam usecase {
+    BackgroundColor #E7F1FF
+    BorderColor #0D6EFD
+}
+
+' ==============================================================================
+' Akteri
+' ==============================================================================
+
+actor Visitor as "Posjetitelj"
+actor User as "Registrirani\nkorisnik"
+
+' Registrirani korisnik ima sve mogućnosti posjetitelja.
+User -|> Visitor
+
+actor "Kartografska\nusluga" as Maps <<external system>>
+' Registracija i prijava moguće su isključivo Google računom (C-02).
+actor "Google\n(pružatelj identiteta)" as Google <<external system>>
+
+' ==============================================================================
+' Granica sustava
+' ==============================================================================
+
+rectangle "Sustav StormWatch" {
+
+    ' Javni pregledi (bez prijave u sustav)
+    (UC-001\nPregled karte i slojeva) as UC_Map
+    (UC-002\nPregled vremena za mjesto) as UC_Weather
+
+    ' Korisnički račun; prva prijava Google računom ujedno je registracija.
+    (UC-003\nPrijava Google računom) as UC_SignIn
+    (UC-004\nUređivanje profila\ni brisanje računa) as UC_Profile
+    (UC-005\nOmiljene lokacije\ni pregled „Lokacije”) as UC_Locations
+}
+
+' ==============================================================================
+' Asocijacije
+' ==============================================================================
+
+Visitor -- UC_Map
+Visitor -- UC_Weather
+Visitor -- UC_SignIn
+
+User -- UC_Profile
+User -- UC_Locations
+
+UC_Map -- Maps
+UC_SignIn -- Google
+
+@enduml

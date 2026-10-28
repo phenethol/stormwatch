@@ -15,11 +15,11 @@ StormWatch objedinjuje službene podatke DHMZ-a i zapažanja korisnika na jednom
 
 | Korist                                                | Kako će se pokazati (bez brojčanih tvrdnji)                                                            |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Službeni podaci i opažanja korisnika na jednom mjestu | Mjerenja postaja, upozorenja i prijave vidljivi su kao slojevi iste karte (F-014 – F-017).             |
-| Usporedba opažanja sa službenim mjerenjem             | Uz svaku prijavu prikazuje se mjerenje najbliže postaje u trenutku opažanja (F-037).                   |
-| Pouzdanija opažanja                                   | Svaka prijava ima stanje i ocjenu vjerodostojnosti izračunatu iz potvrda i osporavanja (F-041, F-046). |
-| Pravovremena obavijest                                | Korisnik postavlja pravila obavijesti za omiljene lokacije (F-028, F-029).                             |
-| Arhiva za analizu                                     | Prošli događaji dostupni su u statistici i izvozu CSV (F-062 – F-064).                                 |
+| Službeni podaci i opažanja korisnika na jednom mjestu | Mjerenja postaja, upozorenja i prijave vidljivi su kao slojevi iste karte (F-005).                     |
+| Usporedba opažanja sa službenim mjerenjem             | Uz svaku prijavu prikazuje se mjerenje najbliže postaje u trenutku opažanja (F-010).                   |
+| Pouzdanija opažanja                                   | Svaka prijava ima stanje i ocjenu vjerodostojnosti izračunatu iz potvrda i osporavanja (F-011, F-013). |
+| Pravovremena obavijest                                | Korisnik postavlja pravila obavijesti za omiljene lokacije (F-018).                                    |
+| Arhiva za analizu                                     | Prošli događaji dostupni su u statistici i izvozu CSV (F-017).                                         |
 
 Korist se dokazuje demonstracijom funkcionalnosti, a ne mjerenjima na stvarnim korisnicima jer takvih podataka nemamo.
 
@@ -40,23 +40,24 @@ Korist se dokazuje demonstracijom funkcionalnosti, a ne mjerenjima na stvarnim k
 
 ## 1.3 Granice projekta
 
-**Uključeno:** javni pregled karte sa slojevima mjernih postaja, upozorenja i potvrđenih prijava; registracija s potvrdom e-pošte i prijava korisničkim imenom i lozinkom uz OAuth 2.0 tokene; periodičko preuzimanje i pohrana podataka DHMZ-a; predaja prijave nevremena s mjerenjem najbliže postaje; potvrde, osporavanja, komentari, ocjena vjerodostojnosti i grupiranje prijava u događaje; reputacija i pouzdani motritelji; regionalna moderacija i sankcije; stručni komentari meteorologa; omiljene lokacije, praćenje i obavijesti u aplikaciji i e-poštom; statistika s izvozom CSV; administracija korisnika, uloga i preuzimanja; prikaz novih prijava, potvrda i komentara bez ručnog osvježavanja.
+**Uključeno:** javni pregled karte sa slojevima mjernih postaja, upozorenja i potvrđenih prijava; registracija i prijava isključivo Google računom (OpenID Connect na OAuth 2.0); periodičko preuzimanje i pohrana podataka DHMZ-a; predaja prijave nevremena s mjerenjem najbliže postaje; potvrde, osporavanja, komentari, ocjena vjerodostojnosti i grupiranje prijava u događaje; reputacija i pouzdani motritelji; regionalna moderacija i sankcije; stručni komentari meteorologa; omiljene lokacije, praćenje i obavijesti u aplikaciji i e-poštom; statistika s izvozom CSV; administracija korisnika, uloga i preuzimanja; prikaz novih prijava, potvrda i komentara bez ručnog osvježavanja.
 
 **Izvan opsega ili odgođeno:**
 
-- Izdavanje službenih upozorenja i vlastitih prognoza — upozorenja izdaje isključivo DHMZ, StormWatch ih samo prenosi.
-- Prijava hitnih slučajeva službama (112) — aplikacija nije hitna služba i to jasno navodi (NF-24).
-- Nativne mobilne i desktop aplikacije — zadatak traži responzivnu web aplikaciju.
-- SMS i push obavijesti — zadatak traži obavijesti u aplikaciji i e-poštom.
-- Automatsko prepoznavanje pojava na fotografijama, novčana procjena štete, privatne poruke i višejezično sučelje — izvan zadatka i nepotrebni za glavnu svrhu u jednom semestru.
+- Izdavanje službenih upozorenja i vlastitih prognoza: upozorenja izdaje isključivo DHMZ, StormWatch ih samo prenosi.
+- Prijava hitnih slučajeva službama (112): aplikacija nije hitna služba i to jasno navodi (NF-09).
+- Nativne mobilne i desktop aplikacije: zadatak traži responzivnu web aplikaciju.
+- SMS i push obavijesti: zadatak traži obavijesti u aplikaciji i e-poštom.
+- Registracija i prijava korisničkim imenom i lozinkom ili drugim pružateljima identiteta: prijava je isključivo Google računom (odluka tima, C-02).
+- Automatsko prepoznavanje pojava na fotografijama, novčana procjena štete, privatne poruke i višejezično sučelje: izvan zadatka i nepotrebni za glavnu svrhu u jednom semestru.
 
 **Vanjske ovisnosti:**
 
-- **DHMZ** — javno dostupni XML podaci (mjerenja, prognoze, upozorenja); bez njih nema službenog dijela sadržaja. Aplikacija ih pohranjuje i radi s posljednjim podacima kad izvor nije dostupan.
-- **Kartografska usluga** (npr. OpenStreetMap) — prikaz karte u pregledniku.
-- **Poslužitelj e-pošte** — potvrda računa, nova lozinka i obavijesti.
-- **Preglednik uređaja** — Geolocation API za GPS lokaciju i pristup kameri ili datotekama za fotografije.
-- **Google račun (OAuth 2.0)** — prijava u aplikaciju putem Googlova računa. Korisnik se autorizira preko Googleova servisa, a aplikacija dobiva token za pristup.
+- **DHMZ**: javno dostupni XML podaci (mjerenja, prognoze, upozorenja); bez njih nema službenog dijela sadržaja. Aplikacija ih pohranjuje i radi s posljednjim podacima kad izvor nije dostupan.
+- **Kartografska usluga** (npr. OpenStreetMap): prikaz karte u pregledniku.
+- **Poslužitelj e-pošte**: slanje obavijesti.
+- **Preglednik uređaja**: Geolocation API za GPS lokaciju i pristup kameri ili datotekama za fotografije.
+- **Google račun (OpenID Connect na OAuth 2.0)**: jedini način registracije i prijave. Korisnik se prijavljuje na Googleovoj stranici, a aplikacija provjerava Googleov ID token i izdaje vlastiti pristupni token; bez Google računa dostupni su samo javni pregledi.
 
 ## 1.4 Postojeći pristupi i opravdanost projekta
 
