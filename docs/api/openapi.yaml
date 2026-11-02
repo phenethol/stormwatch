@@ -1,0 +1,2763 @@
+openapi: 3.1.0
+info:
+  title: StormWatch API
+  version: 0.1.0
+  summary: Ugovor između React frontenda i Django Ninja backenda.
+  description: |
+    Ugovor između frontenda (React + TypeScript, `/frontend`) i backenda (Django + Django Ninja).
+    Svaka operacija navodi zahtjeve i obrasce uporabe koje pokriva (`x-requirements`, `x-use-cases`),
+    prema `docs/2-Analiza-zahtjeva.md` i `docs/3-Obrasci-uporabe.md`.
+
+    ## Konvencije
+    - Tijela zahtjeva i odgovora su JSON (`application/json`), osim predaje prijave i fotografije profila
+      (`multipart/form-data`) te izvoza CSV-a (`text/csv`).
+    - Nazivi polja su u `snake_case`, kao u Django Ninja shemama.
+    - Vremena su ISO 8601 s vremenskom zonom (npr. `2026-07-14T16:20:00+02:00`).
+    - Koordinate su WGS 84 (SRID 4326): točke kao `{lat, lon}`, a granice regija kao GeoJSON (redoslijed `[lon, lat]`).
+    - Identifikatori su cijeli brojevi; korisnike javno adresiramo korisničkim imenom.
+    - Mjerne jedinice prema DR-03: °C, %, hPa, m/s, smjer vjetra kao strana svijeta.
+
+    ## Autentikacija (F-001, F-002, NF-04)
+    - Prijava i registracija idu isključivo Google računom, preko django-allauth (headless, klijent `browser`).
+    - Nakon prijave sustav izdaje vlastiti pristupni token: identifikator Django sesije u HttpOnly kolačiću `sessionid`.
+      Odjava ga poništava; deaktivacija računa poništava sve sesije korisnika (F-030).
+    - Zahtjevi koji mijenjaju podatke (POST, PUT, PATCH, DELETE) šalju i zaglavlje `X-CSRFToken`
+      s vrijednošću kolačića `csrftoken` (dohvaća se pozivom `GET /api/v1/auth/csrf`).
+    - Frontend sve pozive radi s `fetch(..., { credentials: 'include' })`.
+
+    ## Greške
+    - `401` nema valjane sesije; `403` nedovoljna ovlast ili regija (NF-05) ili aktivna zabrana objavljivanja (PR-09);
+      `404` resurs ne postoji ili ga korisnik ne smije vidjeti (PR-07); `409` sukob stanja; `422` neispravni podaci.
+    - Greške validacije vraćaju se po poljima (format Django Ninje), pa ih frontend prikazuje uz pripadajuće polje forme.
+
+    ## Paginacija
+    Popisi primaju `limit` i `offset` i vraćaju `{ items, count }` (Django Ninja `LimitOffsetPagination`).
+
+    ## Prikaz bez osvježavanja (NF-02)
+    Frontend periodično poziva popise s parametrom `updated_since` (vrijednost `server_time` iz prethodnog odgovora)
+    i dobiva samo nove ili promijenjene zapise te `removed_ids` za zapise koji su u međuvremenu skriveni.
+    Interval pollinga mora biti kraći od 20 s.
+
+    ## Podaci DHMZ-a (NF-08)
+    Odgovori s podacima DHMZ-a sadrže `source: DHMZ`; frontend uz njih uvijek prikazuje „Izvor: DHMZ”.
+
+servers:
+  - url: http://localhost:8000
+    description: Lokalni razvoj (Docker Compose)
+  - url: https://{host}
+    description: Render web servis
+    variables:
+      host:
+        default: stormwatch-api.onrender.com
+        description: Primjer; stvarna adresa određuje se pri postavljanju na Render.
+
+tags:
+  - name: Autentikacija
+    description: Prijava Google računom (django-allauth headless) i CSRF.
+  - name: Podaci DHMZ-a
+    description: Javni pregledi; postaje, mjerenja, prognoze, upozorenja i regije.
+  - name: Prijave
+    description: Predaja, pregled, glasanje, komentari i prijava neprimjerenog sadržaja.
+  - name: Događaji i statistika
+    description: Grupirane prijave, arhiva i izvoz CSV-a.
+  - name: Profil
+    description: Vlastiti i javni profil.
+  - name: Lokacije i obavijesti
+    description: Omiljene lokacije, pravila obavijesti, praćenje i obavijesti.
+  - name: Moderacija
+    description: Red moderacije, prijavljeni sadržaj, sankcije i pouzdani motritelji.
+  - name: Stručni sadržaj
+    description: Radnje meteorologa.
+  - name: Administracija
+    description: Korisnici, uloge, parametri sustava i statistika korištenja.
+
+security:
+  - sessionCookie: []
+
+paths:
+  # ---------------------------------------------------------------- Autentikacija
+  /_allauth/browser/v1/auth/session:
+    get:
+      tags: [Autentikacija]
+      operationId: getAuthSession
+      summary: Stanje prijave
+      description: |
+        Endpoint django-allauth headless. Vraća `200` za prijavljenog korisnika, a `401` za neprijavljenog
+        ili za korisnika koji je usred prve prijave (tok `provider_signup`, odabir korisničkog imena).
+        Točan oblik odgovora određuje specifikacija django-allauth (`HEADLESS_SERVE_SPECIFICATION = True`).
+      x-requirements: [F-002, F-003]
+      x-use-cases: [UC-003]
+      security: [{}]
+      responses:
+        '200':
+          description: Korisnik je prijavljen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AllauthResponse' }
+        '401':
+          description: Korisnik nije prijavljen ili mora dovršiti registraciju.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AllauthResponse' }
+    delete:
+      tags: [Autentikacija]
+      operationId: logout
+      summary: Odjava
+      description: Poništava sesiju. allauth nakon odjave vraća `401` s `meta.is_authenticated = false`.
+      x-requirements: [F-002]
+      x-use-cases: [UC-003]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '401':
+          description: Korisnik je odjavljen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AllauthResponse' }
+
+  /_allauth/browser/v1/auth/provider/redirect:
+    post:
+      tags: [Autentikacija]
+      operationId: startGoogleLogin
+      summary: Početak prijave Google računom
+      description: |
+        Šalje se kao obična HTML forma (navigacija cijele stranice), ne kao `fetch`.
+        Preglednik se preusmjerava na Google, a nakon prijave natrag na `callback_url` u frontendu.
+      x-requirements: [F-001, F-002]
+      x-use-cases: [UC-003]
+      security: [{}]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [provider, callback_url, process, csrfmiddlewaretoken]
+              properties:
+                provider: { type: string, const: google }
+                callback_url: { type: string, format: uri, examples: ['https://stormwatch.example/prijava/povratak'] }
+                process: { type: string, const: login }
+                csrfmiddlewaretoken: { type: string }
+      responses:
+        '302':
+          description: Preusmjeravanje na Googleovu stranicu za prijavu.
+
+  /_allauth/browser/v1/auth/provider/token:
+    post:
+      tags: [Autentikacija]
+      operationId: loginWithGoogleIdToken
+      summary: Prijava Googleovim ID tokenom
+      description: |
+        Alternativa preusmjeravanju (Google Identity Services u frontendu). Backend provjerava potpis,
+        izdavatelja, primatelja i rok valjanosti ID tokena (NF-04).
+      x-requirements: [F-001, F-002, NF-04]
+      x-use-cases: [UC-003]
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, process, token]
+              properties:
+                provider: { type: string, const: google }
+                process: { type: string, const: login }
+                token:
+                  type: object
+                  required: [client_id, id_token]
+                  properties:
+                    client_id: { type: string }
+                    id_token: { type: string }
+      responses:
+        '200':
+          description: Korisnik je prijavljen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AllauthResponse' }
+        '400':
+          description: ID token nije valjan.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AllauthResponse' }
+        '401':
+          description: Prva prijava; korisnik mora odabrati korisničko ime (`provider_signup`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AllauthResponse' }
+
+  /_allauth/browser/v1/auth/provider/signup:
+    post:
+      tags: [Autentikacija]
+      operationId: completeGoogleSignup
+      summary: Dovršetak registracije pri prvoj prijavi
+      description: |
+        Pri prvoj prijavi korisnik odabire jedinstveno korisničko ime i potvrđuje obavijest o privatnosti.
+        Polje `privacy_notice_accepted` dodajemo vlastitom formom (`SOCIALACCOUNT_FORMS['signup']`).
+        Adresa e-pošte preuzima se iz Google računa.
+      x-requirements: [F-001]
+      x-use-cases: [UC-003]
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, privacy_notice_accepted]
+              properties:
+                username: { $ref: '#/components/schemas/Username' }
+                privacy_notice_accepted: { type: boolean, const: true }
+      responses:
+        '200':
+          description: Račun je stvoren i korisnik je prijavljen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AllauthResponse' }
+        '400':
+          description: Korisničko ime je zauzeto ili neispravno.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AllauthResponse' }
+
+  /api/v1/auth/csrf:
+    get:
+      tags: [Autentikacija]
+      operationId: getCsrfCookie
+      summary: Postavljanje kolačića csrftoken
+      description: Frontend ga poziva pri pokretanju; vrijednost kolačića šalje u zaglavlju `X-CSRFToken`.
+      x-requirements: [NF-04]
+      security: [{}]
+      responses:
+        '204':
+          description: Kolačić `csrftoken` je postavljen.
+          headers:
+            Set-Cookie:
+              schema: { type: string, examples: ['csrftoken=abc123; Path=/; SameSite=Lax; Secure'] }
+
+  # ---------------------------------------------------------------- Podaci DHMZ-a
+  /api/v1/data-status:
+    get:
+      tags: [Podaci DHMZ-a]
+      operationId: getDataStatus
+      summary: Vrijeme posljednjeg preuzimanja podataka DHMZ-a
+      x-requirements: [F-026, NF-03]
+      x-use-cases: [UC-001, UC-023]
+      security: [{}]
+      responses:
+        '200':
+          description: Stanje izvora.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DataStatus' }
+
+  /api/v1/regions:
+    get:
+      tags: [Podaci DHMZ-a]
+      operationId: listRegions
+      summary: Regije s najvišom razinom aktivnog upozorenja
+      description: Sloj upozorenja na karti; granice se šalju samo uz `include_geometry=true`.
+      x-requirements: [F-005, F-023, DR-02]
+      x-use-cases: [UC-001]
+      security: [{}]
+      parameters:
+        - name: include_geometry
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Popis regija.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Region' }
+
+  /api/v1/stations:
+    get:
+      tags: [Podaci DHMZ-a]
+      operationId: listStations
+      summary: Mjerne postaje s posljednjim mjerenjem
+      x-requirements: [F-005, F-026, NF-08, DR-03]
+      x-use-cases: [UC-001]
+      security: [{}]
+      parameters:
+        - $ref: '#/components/parameters/Bbox'
+      responses:
+        '200':
+          description: Postaje.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Station' }
+
+  /api/v1/stations/{station_id}:
+    get:
+      tags: [Podaci DHMZ-a]
+      operationId: getStation
+      summary: Mjerna postaja
+      x-requirements: [F-005]
+      x-use-cases: [UC-001]
+      security: [{}]
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+      responses:
+        '200':
+          description: Postaja s posljednjim mjerenjem.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Station' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/stations/{station_id}/measurements:
+    get:
+      tags: [Podaci DHMZ-a]
+      operationId: listStationMeasurements
+      summary: Povijest mjerenja postaje
+      x-requirements: [F-026]
+      security: [{}]
+      parameters:
+        - $ref: '#/components/parameters/StationId'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Mjerenja, najnovije prvo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeasurementPage' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/warnings:
+    get:
+      tags: [Podaci DHMZ-a]
+      operationId: listWarnings
+      summary: Upozorenja DHMZ-a
+      description: Zadano vraća samo upozorenja čije razdoblje važenja obuhvaća trenutačno vrijeme (F-007).
+      x-requirements: [F-005, F-007, NF-08, DR-01, DR-02]
+      x-use-cases: [UC-001, UC-002]
+      security: [{}]
+      parameters:
+        - $ref: '#/components/parameters/RegionId'
+        - name: active
+          in: query
+          schema: { type: boolean, default: true }
+        - name: min_level
+          in: query
+          schema: { $ref: '#/components/schemas/WarningLevel' }
+      responses:
+        '200':
+          description: Upozorenja.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Warning' }
+
+  /api/v1/weather:
+    get:
+      tags: [Podaci DHMZ-a]
+      operationId: getPlaceWeather
+      summary: Vrijeme za mjesto
+      description: |
+        Mjerenja najbliže postaje (PR-08), prognoza najbližeg mjesta za koje DHMZ objavljuje prognozu
+        i aktivna upozorenja za regiju odabrane točke.
+      x-requirements: [F-007, NF-08]
+      x-use-cases: [UC-002]
+      security: [{}]
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+      responses:
+        '200':
+          description: Vrijeme za mjesto.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlaceWeather' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/places:
+    get:
+      tags: [Podaci DHMZ-a]
+      operationId: searchPlaces
+      summary: Pretraživanje naziva mjesta
+      x-requirements: [F-008]
+      x-use-cases: [UC-005]
+      security: [{}]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 60 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 20, default: 10 }
+      responses:
+        '200':
+          description: Mjesta koja odgovaraju upitu.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Place' }
+
+  # ---------------------------------------------------------------- Prijave
+  /api/v1/reports:
+    get:
+      tags: [Prijave]
+      operationId: listReports
+      summary: Prijave za kartu i popise
+      description: |
+        Vraća samo prijave koje pozivatelj smije vidjeti (PR-07): posjetitelj samo potvrđene,
+        registrirani korisnik i one na čekanju, a moderator regije i administrator sve.
+        Uz `updated_since` vraća samo nove ili promijenjene prijave i `removed_ids` (NF-02).
+      x-requirements: [F-003, F-005, F-006, F-011, F-025, NF-02]
+      x-use-cases: [UC-001, UC-010]
+      security:
+        - {}
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/PhenomenonFilter'
+        - $ref: '#/components/parameters/ObservedFrom'
+        - $ref: '#/components/parameters/ObservedTo'
+        - $ref: '#/components/parameters/Bbox'
+        - $ref: '#/components/parameters/RegionId'
+        - name: event_id
+          in: query
+          schema: { type: integer }
+        - name: valuable_only
+          in: query
+          description: Samo prijave koje je meteorolog označio kao vrijedne (F-025).
+          schema: { type: boolean, default: false }
+        - name: include_deleted
+          in: query
+          description: Samo za administratora; uključuje obrisane prijave (F-023, F-030).
+          schema: { type: boolean, default: false }
+        - $ref: '#/components/parameters/UpdatedSince'
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 200 }
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Prijave, najnovije opažanje prvo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportPage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    post:
+      tags: [Prijave]
+      operationId: createReport
+      summary: Predaja prijave opažanja
+      description: |
+        Sustav provjerava podatke (PR-01) i fotografije (NF-06, P-03), uklanja EXIF metapodatke (NF-07),
+        pridružuje mjerenje najbliže postaje (PR-08) i događaj (PR-04). Odgovor stiže najkasnije 10 s
+        nakon prijenosa fotografija (NF-01). Prijava je u stanju `pending`, a za pouzdanog motritelja
+        odmah `confirmed` (F-022).
+      x-requirements: [F-009, F-010, F-011, F-016, F-022, NF-01, NF-06, NF-07, PR-01, PR-09]
+      x-use-cases: [UC-006]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/ReportCreate' }
+            encoding:
+              photos:
+                contentType: image/jpeg, image/png, image/webp, image/heic
+      responses:
+        '201':
+          description: Prijava je zaprimljena.
+          headers:
+            Location:
+              schema: { type: string, examples: ['/api/v1/reports/1042'] }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Korisnik ima aktivnu zabranu objavljivanja (PR-09).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '413':
+          description: Fotografija je veća od dopuštenog (P-03).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/reports/{report_id}:
+    get:
+      tags: [Prijave]
+      operationId: getReport
+      summary: Detalj prijave
+      description: |
+        Uključuje fotografije, mjerenje najbliže postaje u trenutku opažanja (F-010), broj potvrda i osporavanja,
+        ocjenu vjerodostojnosti i glas pozivatelja. Obrazloženje odbijanja vide samo autor, moderator regije i administrator.
+      x-requirements: [F-010, F-011, F-012, F-013, F-022, F-025, PR-07]
+      x-use-cases: [UC-007]
+      security:
+        - {}
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Prijava.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Moderacija]
+      operationId: deleteReport
+      summary: Brisanje prijave
+      description: |
+        Dopušteno moderatoru regije prijave (F-023) i administratoru (F-030). Brisanje je logičko:
+        obrisanu prijavu vidi samo administrator. Autor dobiva obavijest.
+      x-requirements: [F-023, F-030, NF-05]
+      x-use-cases: [UC-016, UC-020]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '204':
+          description: Prijava je obrisana.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/reports/{report_id}/vote:
+    put:
+      tags: [Prijave]
+      operationId: castVote
+      summary: Potvrda ili osporavanje prijave
+      description: |
+        Postavlja ili mijenja glas pozivatelja (PR-02). Sustav ponovno izračunava ocjenu vjerodostojnosti (PR-03)
+        i reputaciju autora (PR-05).
+      x-requirements: [F-012, F-013, F-021, PR-02, PR-03, PR-05]
+      x-use-cases: [UC-007]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VoteRequest' }
+      responses:
+        '200':
+          description: Glas je zabilježen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VoteResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Korisnik ne može glasati za vlastitu prijavu (PR-02a).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Za prijavu u ovom stanju ne može se glasati (PR-02d).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Prijave]
+      operationId: withdrawVote
+      summary: Povlačenje glasa
+      x-requirements: [F-012, F-013, F-021, PR-02, PR-05]
+      x-use-cases: [UC-007]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Glas je povučen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VoteResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/reports/{report_id}/comments:
+    get:
+      tags: [Prijave]
+      operationId: listReportComments
+      summary: Komentari prijave
+      x-requirements: [F-014, NF-02]
+      x-use-cases: [UC-008]
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/UpdatedSince'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Komentari, najstariji prvo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommentPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Prijave]
+      operationId: createComment
+      summary: Komentiranje prijave
+      x-requirements: [F-014, PR-09]
+      x-use-cases: [UC-008]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CommentCreate' }
+      responses:
+        '201':
+          description: Komentar je objavljen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Korisnik ima aktivnu zabranu objavljivanja (PR-09).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/comments/{comment_id}:
+    delete:
+      tags: [Moderacija]
+      operationId: deleteComment
+      summary: Brisanje komentara
+      description: Dopušteno moderatoru regije prijave i administratoru; obrisani komentar vidi samo administrator.
+      x-requirements: [F-023, F-030, NF-05]
+      x-use-cases: [UC-016, UC-020]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      responses:
+        '204':
+          description: Komentar je obrisan.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/reports/{report_id}/flags:
+    post:
+      tags: [Prijave]
+      operationId: flagReport
+      summary: Prijava neprimjerene ili lažne prijave
+      x-requirements: [F-015]
+      x-use-cases: [UC-009]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FlagCreate' }
+      responses:
+        '201':
+          description: Sadržaj je prijavljen moderatorima.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContentFlag' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Korisnik je već prijavio isti sadržaj.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/comments/{comment_id}/flags:
+    post:
+      tags: [Prijave]
+      operationId: flagComment
+      summary: Prijava neprimjerenog komentara
+      x-requirements: [F-015]
+      x-use-cases: [UC-009]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FlagCreate' }
+      responses:
+        '201':
+          description: Sadržaj je prijavljen moderatorima.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContentFlag' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Korisnik je već prijavio isti sadržaj.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ---------------------------------------------------------------- Događaji i statistika
+  /api/v1/events:
+    get:
+      tags: [Događaji i statistika]
+      operationId: listEvents
+      summary: Događaji i arhiva događaja
+      x-requirements: [F-016, F-017]
+      x-use-cases: [UC-010, UC-011]
+      parameters:
+        - $ref: '#/components/parameters/PhenomenonFilter'
+        - $ref: '#/components/parameters/RegionId'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Događaji, najnoviji prvo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EventPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/events/{event_id}:
+    get:
+      tags: [Događaji i statistika]
+      operationId: getEvent
+      summary: Stranica događaja
+      description: Stručni komentar meteorologa je na vrhu; prijave su samo one koje pozivatelj smije vidjeti (PR-07).
+      x-requirements: [F-016, F-025, PR-04, PR-07]
+      x-use-cases: [UC-010]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: Događaj.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EventDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/events/{event_id}/comments:
+    get:
+      tags: [Događaji i statistika]
+      operationId: listEventComments
+      summary: Rasprava događaja
+      description: Komentari svih vidljivih prijava događaja, najstariji prvo.
+      x-requirements: [F-014, F-016, NF-02]
+      x-use-cases: [UC-010]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - $ref: '#/components/parameters/UpdatedSince'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Komentari.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommentPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/statistics/frequency:
+    get:
+      tags: [Događaji i statistika]
+      operationId: getFrequencyStatistics
+      summary: Učestalost pojava po regijama i mjesecima
+      description: Podloga za grafikon i tablicu istih vrijednosti; broje se samo događaji koji nisu odbijeni ni obrisani.
+      x-requirements: [F-017, F-025]
+      x-use-cases: [UC-011]
+      parameters:
+        - $ref: '#/components/parameters/PhenomenonFilter'
+        - $ref: '#/components/parameters/RegionId'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - name: valuable_only
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Retci statistike.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FrequencyStatistics' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/statistics/export:
+    get:
+      tags: [Događaji i statistika]
+      operationId: exportStatistics
+      summary: Izvoz u CSV
+      description: |
+        Uz isti filtar sadrži iste zapise kao prikaz (F-017). `dataset=frequency` izvozi tablicu učestalosti,
+        a `dataset=events` arhivu događaja. Jedinice prema DR-03.
+      x-requirements: [F-017, F-025, DR-03]
+      x-use-cases: [UC-011]
+      parameters:
+        - name: dataset
+          in: query
+          required: true
+          schema: { type: string, enum: [frequency, events] }
+        - $ref: '#/components/parameters/PhenomenonFilter'
+        - $ref: '#/components/parameters/RegionId'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - name: valuable_only
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: CSV datoteka (UTF-8, razdjelnik `;`).
+          headers:
+            Content-Disposition:
+              schema: { type: string, examples: ['attachment; filename="stormwatch-ucestalost-2026.csv"'] }
+          content:
+            text/csv:
+              schema: { type: string }
+              example: |
+                regija;mjesec;pojava;broj_dogadaja
+                Slavonija;2026-07;tuča;4
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ---------------------------------------------------------------- Profil
+  /api/v1/me:
+    get:
+      tags: [Profil]
+      operationId: getMyProfile
+      summary: Vlastiti profil
+      description: Jedini odgovor koji sadrži adresu e-pošte korisnika (NF-07).
+      x-requirements: [F-004, F-020, F-021, F-024]
+      x-use-cases: [UC-004]
+      responses:
+        '200':
+          description: Profil prijavljenog korisnika.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MyProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [Profil]
+      operationId: updateMyProfile
+      summary: Uređivanje opisa profila
+      x-requirements: [F-004]
+      x-use-cases: [UC-004]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProfileUpdate' }
+      responses:
+        '200':
+          description: Profil je spremljen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MyProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Profil]
+      operationId: deleteMyAccount
+      summary: Brisanje vlastitog računa
+      description: Osobni podaci se brišu, a prijave ostaju uz autora „izbrisani korisnik” (F-004, GDPR).
+      x-requirements: [F-004, C-04]
+      x-use-cases: [UC-004]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Račun je obrisan i sesija poništena.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/me/photo:
+    put:
+      tags: [Profil]
+      operationId: uploadMyPhoto
+      summary: Postavljanje fotografije profila
+      x-requirements: [F-004, NF-06, NF-07]
+      x-use-cases: [UC-004]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo: { type: string, format: binary }
+            encoding:
+              photo:
+                contentType: image/jpeg, image/png, image/webp, image/heic
+      responses:
+        '200':
+          description: Fotografija je spremljena.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MyProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: Fotografija je prevelika (P-03).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Profil]
+      operationId: deleteMyPhoto
+      summary: Uklanjanje fotografije profila
+      x-requirements: [F-004]
+      x-use-cases: [UC-004]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Fotografija je uklonjena.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/me/reports:
+    get:
+      tags: [Profil]
+      operationId: listMyReports
+      summary: Pregled „Prijave”
+      description: Sve vlastite prijave sa stanjem, a uz odbijenu i obrazloženje (F-011).
+      x-requirements: [F-011]
+      x-use-cases: [UC-006]
+      parameters:
+        - name: state
+          in: query
+          schema: { $ref: '#/components/schemas/ReportState' }
+        - $ref: '#/components/parameters/UpdatedSince'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Vlastite prijave, najnovije prvo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportDetailPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/users/{username}:
+    get:
+      tags: [Profil]
+      operationId: getPublicProfile
+      summary: Javni profil korisnika
+      description: Ne sadrži e-poštu ni lokacije (NF-07).
+      x-requirements: [F-004, F-019, F-021, F-022, NF-07]
+      x-use-cases: [UC-013]
+      parameters:
+        - $ref: '#/components/parameters/UsernamePath'
+      responses:
+        '200':
+          description: Javni profil.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- Lokacije i obavijesti
+  /api/v1/me/locations:
+    get:
+      tags: [Lokacije i obavijesti]
+      operationId: listFavoriteLocations
+      summary: Pregled „Lokacije”
+      description: Svaka lokacija dolazi s podacima iz F-007 (`weather`).
+      x-requirements: [F-007, F-008]
+      x-use-cases: [UC-005]
+      responses:
+        '200':
+          description: Omiljene lokacije.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FavoriteLocation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Lokacije i obavijesti]
+      operationId: createFavoriteLocation
+      summary: Spremanje omiljene lokacije
+      x-requirements: [F-008]
+      x-use-cases: [UC-005]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FavoriteLocationCreate' }
+      responses:
+        '201':
+          description: Lokacija je spremljena.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FavoriteLocation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: Dosegnut je najveći broj omiljenih lokacija (P-01).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/me/locations/{location_id}:
+    patch:
+      tags: [Lokacije i obavijesti]
+      operationId: renameFavoriteLocation
+      summary: Preimenovanje omiljene lokacije
+      x-requirements: [F-008]
+      x-use-cases: [UC-005]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/LocationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FavoriteLocationUpdate' }
+      responses:
+        '200':
+          description: Lokacija je spremljena.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FavoriteLocation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Lokacije i obavijesti]
+      operationId: deleteFavoriteLocation
+      summary: Brisanje omiljene lokacije
+      description: Briše i pravila obavijesti te lokacije.
+      x-requirements: [F-008, F-018]
+      x-use-cases: [UC-005]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/LocationId'
+      responses:
+        '204':
+          description: Lokacija je obrisana.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/me/locations/{location_id}/rules:
+    get:
+      tags: [Lokacije i obavijesti]
+      operationId: listNotificationRules
+      summary: Pravila obavijesti za lokaciju
+      x-requirements: [F-018]
+      x-use-cases: [UC-012]
+      parameters:
+        - $ref: '#/components/parameters/LocationId'
+      responses:
+        '200':
+          description: Pravila.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/NotificationRule' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Lokacije i obavijesti]
+      operationId: createNotificationRule
+      summary: Postavljanje pravila obavijesti
+      x-requirements: [F-018, P-02, DR-02]
+      x-use-cases: [UC-012]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/LocationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationRuleCreate' }
+      responses:
+        '201':
+          description: Pravilo je spremljeno.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationRule' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/me/notification-rules/{rule_id}:
+    delete:
+      tags: [Lokacije i obavijesti]
+      operationId: deleteNotificationRule
+      summary: Brisanje pravila obavijesti
+      x-requirements: [F-018]
+      x-use-cases: [UC-012]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: rule_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Pravilo je obrisano.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/me/follows:
+    get:
+      tags: [Lokacije i obavijesti]
+      operationId: listFollows
+      summary: Praćeni korisnici i lokacije
+      x-requirements: [F-019]
+      x-use-cases: [UC-013]
+      responses:
+        '200':
+          description: Praćenja.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Follow' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Lokacije i obavijesti]
+      operationId: createFollow
+      summary: Praćenje korisnika ili lokacije
+      x-requirements: [F-019, P-02]
+      x-use-cases: [UC-013]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FollowCreate' }
+      responses:
+        '201':
+          description: Praćenje je postavljeno.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Follow' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Korisnik ne postoji.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Korisnik već prati tog korisnika.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/me/follows/{follow_id}:
+    delete:
+      tags: [Lokacije i obavijesti]
+      operationId: deleteFollow
+      summary: Prekid praćenja
+      x-requirements: [F-019]
+      x-use-cases: [UC-013]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: follow_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Praćenje je prekinuto.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/me/notifications:
+    get:
+      tags: [Lokacije i obavijesti]
+      operationId: listNotifications
+      summary: Pregled „Obavijesti”
+      description: Obavijesti stvara sustav (UC-015) pri novom upozorenju, potvrđenoj prijavi u blizini, novoj prijavi praćenog korisnika ili lokacije, odluci moderatora i sankciji.
+      x-requirements: [F-018, F-019, F-020]
+      x-use-cases: [UC-014, UC-015]
+      parameters:
+        - name: unread_only
+          in: query
+          schema: { type: boolean, default: false }
+        - $ref: '#/components/parameters/UpdatedSince'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Obavijesti, najnovije prvo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/me/notifications/unread-count:
+    get:
+      tags: [Lokacije i obavijesti]
+      operationId: getUnreadNotificationCount
+      summary: Broj nepročitanih obavijesti
+      description: Lagani poziv za crvenu oznaku u zaglavlju; frontend ga poziva pollingom (NF-02).
+      x-requirements: [F-020, NF-02]
+      x-use-cases: [UC-014]
+      responses:
+        '200':
+          description: Broj nepročitanih.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UnreadCount' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/me/notifications/{notification_id}/read:
+    post:
+      tags: [Lokacije i obavijesti]
+      operationId: markNotificationRead
+      summary: Označavanje obavijesti pročitanom
+      x-requirements: [F-020]
+      x-use-cases: [UC-014]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Obavijest je pročitana.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/me/notifications/read-all:
+    post:
+      tags: [Lokacije i obavijesti]
+      operationId: markAllNotificationsRead
+      summary: Označavanje svih obavijesti pročitanima
+      x-requirements: [F-020]
+      x-use-cases: [UC-014]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '200':
+          description: Sve obavijesti su pročitane.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UnreadCount' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ---------------------------------------------------------------- Moderacija
+  /api/v1/moderation/reports:
+    get:
+      tags: [Moderacija]
+      operationId: listModerationQueue
+      summary: Prijave na čekanju iz regija moderatora
+      description: Samo prijave iz regija pozivatelja (PR-06, NF-05), uz ocjenu vjerodostojnosti.
+      x-requirements: [F-023, NF-05, PR-06]
+      x-use-cases: [UC-016]
+      parameters:
+        - $ref: '#/components/parameters/RegionId'
+        - $ref: '#/components/parameters/UpdatedSince'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Red moderacije, najstarija predaja prvo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportDetailPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/moderation/reports/{report_id}/decision:
+    post:
+      tags: [Moderacija]
+      operationId: decideReport
+      summary: Potvrda ili odbijanje prijave
+      description: |
+        Odbijanje zahtijeva obrazloženje od najmanje 10 znakova (PR-09). Sustav ažurira reputaciju autora (PR-05)
+        i šalje mu obavijest (UC-015).
+      x-requirements: [F-011, F-021, F-023, NF-05, PR-05, PR-09]
+      x-use-cases: [UC-016]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModerationDecision' }
+      responses:
+        '200':
+          description: Odluka je spremljena.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Prijava više nije na čekanju (npr. obradio ju je drugi moderator).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/moderation/flags:
+    get:
+      tags: [Moderacija]
+      operationId: listContentFlags
+      summary: Prijavljeni sadržaj iz regija moderatora
+      x-requirements: [F-015, F-023, NF-05]
+      x-use-cases: [UC-016]
+      parameters:
+        - $ref: '#/components/parameters/RegionId'
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, dismissed, removed], default: open }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Prijavljeni sadržaj, grupiran po stavci.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FlagQueuePage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/moderation/flags/{flag_id}/resolution:
+    post:
+      tags: [Moderacija]
+      operationId: resolveContentFlag
+      summary: Obrada prijavljenog sadržaja
+      description: '`dismiss` odbacuje neosnovanu prijavu i sadržaj ostaje objavljen; `remove_content` briše sadržaj.'
+      x-requirements: [F-023, NF-05]
+      x-use-cases: [UC-016]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: flag_id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FlagResolution' }
+      responses:
+        '200':
+          description: Stavka je obrađena.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FlagQueueItem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Stavku je već obradio drugi moderator.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/v1/moderation/users/{username}/sanctions:
+    post:
+      tags: [Moderacija]
+      operationId: sanctionUser
+      summary: Upozorenje ili privremena zabrana objavljivanja
+      description: |
+        Sankcija se veže uz prijavu iz regije moderatora (`related_report_id`), čime se provjerava regija (NF-05).
+        Zabrana traje P-09 i ukida se sama po isteku; korisnik dobiva obavijest.
+      x-requirements: [F-024, NF-05, PR-09, P-09]
+      x-use-cases: [UC-017]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/UsernamePath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SanctionCreate' }
+      responses:
+        '201':
+          description: Sankcija je izrečena.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Sanction' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/moderation/users/{username}/trusted-observer:
+    put:
+      tags: [Moderacija]
+      operationId: grantTrustedObserver
+      summary: Dodjela uloge pouzdanog motritelja
+      description: Moguća samo uz reputaciju ≥ P-08; nije automatska.
+      x-requirements: [F-021, F-022, P-08]
+      x-use-cases: [UC-018]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/UsernamePath'
+      responses:
+        '200':
+          description: Uloga je dodijeljena.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Reputacija korisnika je ispod praga P-08.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      tags: [Moderacija]
+      operationId: revokeTrustedObserver
+      summary: Oduzimanje uloge pouzdanog motritelja
+      x-requirements: [F-022]
+      x-use-cases: [UC-018]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/UsernamePath'
+      responses:
+        '200':
+          description: Uloga je oduzeta.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- Stručni sadržaj
+  /api/v1/events/{event_id}/expert-comment:
+    put:
+      tags: [Stručni sadržaj]
+      operationId: upsertExpertComment
+      summary: Objava ili izmjena stručnog komentara
+      x-requirements: [F-025, NF-05]
+      x-use-cases: [UC-019]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExpertCommentUpsert' }
+      responses:
+        '200':
+          description: Komentar je spremljen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExpertComment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Stručni sadržaj]
+      operationId: deleteExpertComment
+      summary: Uklanjanje stručnog komentara
+      x-requirements: [F-025]
+      x-use-cases: [UC-019]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '204':
+          description: Komentar je uklonjen.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/reports/{report_id}/valuable:
+    put:
+      tags: [Stručni sadržaj]
+      operationId: markReportValuable
+      summary: Označavanje prijave vrijednom za stručnu analizu
+      x-requirements: [F-025]
+      x-use-cases: [UC-019]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '204':
+          description: Prijava je označena.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Stručni sadržaj]
+      operationId: unmarkReportValuable
+      summary: Uklanjanje oznake vrijedne prijave
+      x-requirements: [F-025]
+      x-use-cases: [UC-019]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '204':
+          description: Oznaka je uklonjena.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- Administracija
+  /api/v1/admin/users:
+    get:
+      tags: [Administracija]
+      operationId: searchUsers
+      summary: Pretraživanje korisničkih računa
+      x-requirements: [F-027]
+      x-use-cases: [UC-020]
+      parameters:
+        - name: q
+          in: query
+          description: Dio korisničkog imena ili adrese e-pošte.
+          schema: { type: string, maxLength: 100 }
+        - name: role
+          in: query
+          schema: { $ref: '#/components/schemas/Role' }
+        - name: is_active
+          in: query
+          schema: { type: boolean }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Korisnici.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUserPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/admin/users/{user_id}/roles:
+    put:
+      tags: [Administracija]
+      operationId: setUserRoles
+      summary: Dodjela i oduzimanje uloga moderatora i meteorologa
+      description: Moderatoru se obavezno dodjeljuje barem jedna regija; promjena vrijedi od sljedećeg zahtjeva korisnika.
+      x-requirements: [F-027, PR-06]
+      x-use-cases: [UC-020]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RolesUpdate' }
+      responses:
+        '200':
+          description: Uloge su spremljene.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/admin/users/{user_id}/deactivate:
+    post:
+      tags: [Administracija]
+      operationId: deactivateUser
+      summary: Deaktivacija korisničkog računa
+      description: Korisnik se više ne može prijaviti, a sve njegove sesije prestaju vrijediti (F-030).
+      x-requirements: [F-030]
+      x-use-cases: [UC-020]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Račun je deaktiviran.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/admin/settings:
+    get:
+      tags: [Administracija]
+      operationId: getSystemSettings
+      summary: Parametri sustava i preuzimanja
+      x-requirements: [F-028, NF-11]
+      x-use-cases: [UC-021]
+      responses:
+        '200':
+          description: Trenutačne vrijednosti parametara P-01 – P-10.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemSettings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [Administracija]
+      operationId: updateSystemSettings
+      summary: Podešavanje parametara
+      description: |
+        Šalju se samo promijenjena polja. Promjena vrijedi od sljedećeg ciklusa preuzimanja bez ponovnog
+        pokretanja (F-028); interval kraći od 10 min se odbija (P-10).
+      x-requirements: [F-028, NF-11, P-10]
+      x-use-cases: [UC-021]
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemSettingsUpdate' }
+      responses:
+        '200':
+          description: Parametri su spremljeni.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemSettings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /api/v1/admin/fetch-runs:
+    get:
+      tags: [Administracija]
+      operationId: listFetchRuns
+      summary: Ishodi preuzimanja podataka DHMZ-a
+      x-requirements: [F-026, F-029, NF-03]
+      x-use-cases: [UC-022, UC-023]
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - name: status
+          in: query
+          schema: { type: string, enum: [success, failed] }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Preuzimanja, najnovije prvo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FetchRunPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/admin/usage-stats:
+    get:
+      tags: [Administracija]
+      operationId: getUsageStatistics
+      summary: Statistika korištenja sustava
+      x-requirements: [F-029]
+      x-use-cases: [UC-022]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Statistika za razdoblje.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UsageStatistics' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sessionid
+      description: |
+        Django sesija (HttpOnly, Secure, SameSite) koju izdaje django-allauth nakon prijave Google računom.
+        To je vlastiti pristupni token sustava iz F-002; odjava i deaktivacija računa ga poništavaju.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRFToken
+      description: Vrijednost kolačića `csrftoken`; obavezna za POST, PUT, PATCH i DELETE.
+
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Offset:
+      name: offset
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    ReportId:
+      name: report_id
+      in: path
+      required: true
+      schema: { type: integer }
+    CommentId:
+      name: comment_id
+      in: path
+      required: true
+      schema: { type: integer }
+    EventId:
+      name: event_id
+      in: path
+      required: true
+      schema: { type: integer }
+    StationId:
+      name: station_id
+      in: path
+      required: true
+      schema: { type: integer }
+    LocationId:
+      name: location_id
+      in: path
+      required: true
+      schema: { type: integer }
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema: { type: integer }
+    UsernamePath:
+      name: username
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Username' }
+    RegionId:
+      name: region_id
+      in: query
+      schema: { type: integer }
+    PhenomenonFilter:
+      name: phenomenon
+      in: query
+      description: Jedna ili više vrsta pojave (`?phenomenon=hail&phenomenon=snow`).
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { $ref: '#/components/schemas/Phenomenon' }
+    From:
+      name: from
+      in: query
+      schema: { type: string, format: date-time }
+    To:
+      name: to
+      in: query
+      schema: { type: string, format: date-time }
+    ObservedFrom:
+      name: observed_from
+      in: query
+      description: Početak razdoblja opažanja; frontend za „zadnja 24 h” šalje trenutak prije 24 h (F-006).
+      schema: { type: string, format: date-time }
+    ObservedTo:
+      name: observed_to
+      in: query
+      schema: { type: string, format: date-time }
+    Bbox:
+      name: bbox
+      in: query
+      description: Vidljivi dio karte kao `min_lon,min_lat,max_lon,max_lat`.
+      schema:
+        type: string
+        pattern: '^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$'
+        examples: ['13.2,42.3,19.5,46.6']
+    UpdatedSince:
+      name: updated_since
+      in: query
+      description: Vrijednost `server_time` iz prethodnog odgovora; vraćaju se samo promjene nakon tog trenutka (NF-02).
+      schema: { type: string, format: date-time }
+
+  responses:
+    Unauthorized:
+      description: Nema valjane sesije.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { detail: Unauthorized }
+    Forbidden:
+      description: Nedovoljna ovlast, regija izvan nadležnosti moderatora ili aktivna zabrana (NF-05, PR-09).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { detail: Prijava nije iz vaše regije., code: region_forbidden }
+    NotFound:
+      description: Resurs ne postoji ili ga pozivatelj ne smije vidjeti (PR-07).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { detail: Not Found }
+    ValidationError:
+      description: Neispravni podaci; greške su navedene po poljima.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+          example:
+            detail:
+              - type: value_error
+                loc: [body, payload, observed_at]
+                msg: Vrijeme opažanja ne smije biti ranije od 24 h prije predaje.
+
+  schemas:
+    # ---------- zajedničko
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail: { type: string }
+        code:
+          type: string
+          description: Strojno čitljiv razlog, npr. `posting_banned`, `region_forbidden`, `already_flagged`.
+    ValidationError:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            required: [type, loc, msg]
+            properties:
+              type: { type: string }
+              loc:
+                type: array
+                items:
+                  oneOf: [{ type: string }, { type: integer }]
+              msg: { type: string }
+    AllauthResponse:
+      type: object
+      description: Odgovor django-allauth headless; mjerodavna je njegova specifikacija.
+      properties:
+        status: { type: integer }
+        data: { type: object, additionalProperties: true }
+        meta:
+          type: object
+          properties:
+            is_authenticated: { type: boolean }
+          additionalProperties: true
+      additionalProperties: true
+    GeoPoint:
+      type: object
+      required: [lat, lon]
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90, examples: [45.3083] }
+        lon: { type: number, minimum: -180, maximum: 180, examples: [18.4078] }
+    GeoJSONGeometry:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type: { type: string, enum: [Polygon, MultiPolygon] }
+        coordinates: { type: array, items: {} }
+    Username:
+      type: string
+      minLength: 3
+      maxLength: 30
+      pattern: '^[A-Za-z0-9_.-]+$'
+      examples: [ana_motri]
+    Source:
+      type: string
+      const: DHMZ
+      description: Izvor podataka koji frontend mora prikazati (NF-08).
+    RegionRef:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string, examples: [Slavonija] }
+
+    # ---------- enumeracije
+    Phenomenon:
+      type: string
+      enum: [hail, storm_wind, heavy_rain_flood, snow, glaze_ice, waterspout]
+      description: |
+        Vrsta pojave (PR-01): `hail` tuča, `storm_wind` olujni vjetar, `heavy_rain_flood` jaka kiša i poplava,
+        `snow` snijeg, `glaze_ice` poledica, `waterspout` pijavica.
+    Intensity:
+      type: string
+      enum: [pea, hazelnut, walnut, egg, weak, moderate, strong]
+      description: |
+        Za tuču veličina zrna (`pea` grašak, `hazelnut` lješnjak, `walnut` orah, `egg` jaje);
+        za ostale pojave `weak` slab, `moderate` umjeren, `strong` jak (PR-01).
+    Damage:
+      type: string
+      enum: [none, minor, significant, major]
+      description: Procjena štete; bez štete, manja, znatna, velika (PR-01).
+    ReportState:
+      type: string
+      enum: [submitted, pending, confirmed, rejected]
+      description: predana, na čekanju, potvrđena, odbijena (F-011).
+    VoteValue:
+      type: string
+      enum: [confirm, dispute]
+      description: '`confirm` „I ja to vidim”, `dispute` „Kod mene nije tako”.'
+    WarningLevel:
+      type: string
+      enum: [green, yellow, orange, red]
+      description: Razina upozorenja prema ljestvici DHMZ-a (DR-02).
+    Role:
+      type: string
+      enum: [trusted_observer, moderator, meteorologist, admin]
+
+    # ---------- podaci DHMZ-a
+    DataStatus:
+      type: object
+      required: [sources]
+      properties:
+        sources:
+          type: array
+          items:
+            type: object
+            required: [source, last_success_at, last_attempt_at, last_status]
+            properties:
+              source: { type: string, enum: [measurements, forecasts, warnings] }
+              last_success_at: { type: [string, 'null'], format: date-time }
+              last_attempt_at: { type: [string, 'null'], format: date-time }
+              last_status: { type: [string, 'null'], enum: [success, failed, null] }
+        next_fetch_at: { type: [string, 'null'], format: date-time }
+    Region:
+      type: object
+      required: [id, name, max_active_warning_level]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        max_active_warning_level: { $ref: '#/components/schemas/WarningLevel' }
+        geometry:
+          description: Samo uz `include_geometry=true`.
+          oneOf:
+            - { $ref: '#/components/schemas/GeoJSONGeometry' }
+            - { type: 'null' }
+    Measurement:
+      type: object
+      required: [measured_at, source]
+      properties:
+        measured_at: { type: string, format: date-time }
+        temperature_c: { type: [number, 'null'] }
+        humidity_pct: { type: [number, 'null'], minimum: 0, maximum: 100 }
+        pressure_hpa: { type: [number, 'null'] }
+        wind_speed_ms: { type: [number, 'null'], minimum: 0 }
+        wind_direction:
+          type: [string, 'null']
+          description: Strana svijeta kako je objavljuje DHMZ (DR-03), npr. `JZ`.
+        source: { $ref: '#/components/schemas/Source' }
+    MeasurementPage:
+      type: object
+      required: [items, count]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Measurement' }
+        count: { type: integer }
+    Station:
+      type: object
+      required: [id, name, location, region_id, latest_measurement]
+      properties:
+        id: { type: integer }
+        name: { type: string, examples: [Osijek-Čepin] }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        altitude_m: { type: [integer, 'null'] }
+        region_id: { type: integer }
+        latest_measurement:
+          oneOf:
+            - { $ref: '#/components/schemas/Measurement' }
+            - { type: 'null' }
+    NearestMeasurement:
+      type: object
+      description: Mjerenje najbliže postaje prema PR-08; uz prijavu se pohranjuje i ne mijenja.
+      required: [station_id, station_name, distance_km, measurement]
+      properties:
+        station_id: { type: integer }
+        station_name: { type: string }
+        distance_km: { type: number, minimum: 0 }
+        measurement: { $ref: '#/components/schemas/Measurement' }
+    ForecastPeriod:
+      type: object
+      required: [valid_from, valid_to]
+      properties:
+        valid_from: { type: string, format: date-time }
+        valid_to: { type: string, format: date-time }
+        min_temp_c: { type: [number, 'null'] }
+        max_temp_c: { type: [number, 'null'] }
+        wind_direction: { type: [string, 'null'] }
+        wind_speed_ms: { type: [number, 'null'] }
+        precipitation_mm: { type: [number, 'null'] }
+        symbol: { type: [string, 'null'], description: Oznaka vremenske prilike iz XML-a DHMZ-a. }
+        description: { type: [string, 'null'] }
+    Forecast:
+      type: object
+      required: [place_name, place_location, distance_km, issued_at, periods, source]
+      properties:
+        place_name: { type: string, description: Najbliže mjesto za koje DHMZ objavljuje prognozu (F-007). }
+        place_location: { $ref: '#/components/schemas/GeoPoint' }
+        distance_km: { type: number, minimum: 0 }
+        issued_at: { type: string, format: date-time }
+        periods:
+          type: array
+          items: { $ref: '#/components/schemas/ForecastPeriod' }
+        source: { $ref: '#/components/schemas/Source' }
+    Warning:
+      type: object
+      required: [id, region, level, title, valid_from, valid_to, issued_at, source]
+      properties:
+        id: { type: integer }
+        region: { $ref: '#/components/schemas/RegionRef' }
+        level: { $ref: '#/components/schemas/WarningLevel' }
+        type: { type: [string, 'null'], description: 'Vrsta upozorenja iz CAP zapisa, npr. `grmljavinsko nevrijeme`.' }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        valid_from: { type: string, format: date-time }
+        valid_to: { type: string, format: date-time }
+        issued_at: { type: string, format: date-time }
+        source: { $ref: '#/components/schemas/Source' }
+    PlaceWeather:
+      type: object
+      required: [location, region, nearest_measurement, forecast, active_warnings]
+      properties:
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        region:
+          oneOf:
+            - { $ref: '#/components/schemas/RegionRef' }
+            - { type: 'null' }
+        nearest_measurement:
+          description: '`null` kad nema mjerenja unutar P-04.'
+          oneOf:
+            - { $ref: '#/components/schemas/NearestMeasurement' }
+            - { type: 'null' }
+        forecast:
+          oneOf:
+            - { $ref: '#/components/schemas/Forecast' }
+            - { type: 'null' }
+        active_warnings:
+          type: array
+          description: Prazan popis znači „Nema aktivnih upozorenja”.
+          items: { $ref: '#/components/schemas/Warning' }
+    Place:
+      type: object
+      required: [id, name, location]
+      properties:
+        id: { type: integer }
+        name: { type: string, examples: [Đakovo] }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        region:
+          oneOf:
+            - { $ref: '#/components/schemas/RegionRef' }
+            - { type: 'null' }
+
+    # ---------- korisnici
+    UserSummary:
+      type: object
+      description: Autor sadržaja. Za obrisani račun `username` je `null`, a frontend prikazuje „izbrisani korisnik”.
+      required: [username, photo_url, is_trusted_observer, is_deleted]
+      properties:
+        username:
+          oneOf:
+            - { $ref: '#/components/schemas/Username' }
+            - { type: 'null' }
+        photo_url: { type: [string, 'null'], format: uri }
+        is_trusted_observer: { type: boolean }
+        is_meteorologist: { type: boolean, default: false }
+        is_deleted: { type: boolean }
+    PublicProfile:
+      type: object
+      required: [username, photo_url, bio, reputation, roles, report_count, date_joined]
+      properties:
+        username: { $ref: '#/components/schemas/Username' }
+        photo_url: { type: [string, 'null'], format: uri }
+        bio: { type: string, maxLength: 300 }
+        reputation: { type: integer }
+        roles:
+          type: array
+          items: { $ref: '#/components/schemas/Role' }
+        report_count: { type: integer, minimum: 0 }
+        date_joined: { type: string, format: date-time }
+        is_followed_by_me: { type: boolean }
+    MyProfile:
+      allOf:
+        - { $ref: '#/components/schemas/PublicProfile' }
+        - type: object
+          required: [email, moderator_regions, posting_banned_until, unread_notification_count]
+          properties:
+            email: { type: string, format: email }
+            moderator_regions:
+              type: array
+              items: { $ref: '#/components/schemas/RegionRef' }
+            posting_banned_until: { type: [string, 'null'], format: date-time }
+            unread_notification_count: { type: integer, minimum: 0 }
+    ProfileUpdate:
+      type: object
+      properties:
+        bio: { type: string, maxLength: 300 }
+
+    # ---------- prijave
+    Photo:
+      type: object
+      required: [id, url, thumbnail_url]
+      properties:
+        id: { type: integer }
+        url: { type: string, format: uri, description: Fotografija bez EXIF metapodataka (NF-07). }
+        thumbnail_url: { type: string, format: uri }
+        width: { type: [integer, 'null'] }
+        height: { type: [integer, 'null'] }
+    ReportCreate:
+      type: object
+      description: |
+        Pravila PR-01: intenzitet mora odgovarati vrsti pojave; vrijeme opažanja nije više od 5 min nakon predaje
+        ni ranije od 24 h prije predaje. Fotografije prema P-03 i NF-06 (JPEG, PNG, WebP, HEIC).
+      required: [phenomenon, intensity, damage, observed_at, lat, lon, photos]
+      properties:
+        phenomenon: { $ref: '#/components/schemas/Phenomenon' }
+        intensity: { $ref: '#/components/schemas/Intensity' }
+        damage: { $ref: '#/components/schemas/Damage' }
+        observed_at: { type: string, format: date-time }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lon: { type: number, minimum: -180, maximum: 180 }
+        location_source: { type: string, enum: [gps, map], default: gps }
+        description: { type: string, maxLength: 2000 }
+        photos:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { type: string, format: binary }
+    ReportSummary:
+      type: object
+      description: Sažetak prijave za kartu i popise.
+      required:
+        - id
+        - phenomenon
+        - intensity
+        - location
+        - observed_at
+        - state
+        - author
+        - confirmations
+        - disputes
+        - credibility
+        - is_trusted_observer_report
+        - is_valuable
+        - event_id
+        - thumbnail_url
+        - comment_count
+        - updated_at
+      properties:
+        id: { type: integer }
+        phenomenon: { $ref: '#/components/schemas/Phenomenon' }
+        intensity: { $ref: '#/components/schemas/Intensity' }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        observed_at: { type: string, format: date-time }
+        state: { $ref: '#/components/schemas/ReportState' }
+        author: { $ref: '#/components/schemas/UserSummary' }
+        confirmations: { type: integer, minimum: 0 }
+        disputes: { type: integer, minimum: 0 }
+        credibility:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Ocjena vjerodostojnosti u postocima (PR-03).
+        is_trusted_observer_report: { type: boolean, description: Posebna oznaka prijave pouzdanog motritelja (F-022). }
+        is_valuable: { type: boolean, description: Meteorolog je označio prijavu kao vrijednu (F-025). }
+        event_id: { type: [integer, 'null'] }
+        thumbnail_url: { type: [string, 'null'], format: uri }
+        comment_count: { type: integer, minimum: 0 }
+        updated_at: { type: string, format: date-time }
+    ReportDetail:
+      allOf:
+        - { $ref: '#/components/schemas/ReportSummary' }
+        - type: object
+          required: [damage, description, photos, submitted_at, region, nearest_measurement, rejection_reason, my_vote, can_vote, event_title]
+          properties:
+            damage: { $ref: '#/components/schemas/Damage' }
+            description: { type: [string, 'null'], maxLength: 2000 }
+            photos:
+              type: array
+              items: { $ref: '#/components/schemas/Photo' }
+            submitted_at: { type: string, format: date-time }
+            region: { $ref: '#/components/schemas/RegionRef' }
+            nearest_measurement:
+              description: '`null` znači „Nema službenog mjerenja za vrijeme opažanja” (F-010).'
+              oneOf:
+                - { $ref: '#/components/schemas/NearestMeasurement' }
+                - { type: 'null' }
+            rejection_reason:
+              type: [string, 'null']
+              description: Vidljivo samo autoru, moderatoru regije i administratoru.
+            my_vote:
+              oneOf:
+                - { $ref: '#/components/schemas/VoteValue' }
+                - { type: 'null' }
+            can_vote: { type: boolean, description: Smije li pozivatelj glasati (PR-02). }
+            event_title: { type: [string, 'null'], examples: ['Tuča, Đakovo, 14. 7. 2026.'] }
+    ReportPage:
+      type: object
+      required: [items, count, server_time]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ReportSummary' }
+        count: { type: integer }
+        server_time: { type: string, format: date-time }
+        removed_ids:
+          type: array
+          description: Uz `updated_since`; prijave koje pozivatelj više ne smije vidjeti (odbijene ili obrisane).
+          items: { type: integer }
+    ReportDetailPage:
+      type: object
+      required: [items, count, server_time]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ReportDetail' }
+        count: { type: integer }
+        server_time: { type: string, format: date-time }
+    VoteRequest:
+      type: object
+      required: [value]
+      properties:
+        value: { $ref: '#/components/schemas/VoteValue' }
+    VoteResult:
+      type: object
+      required: [report_id, confirmations, disputes, credibility, my_vote]
+      properties:
+        report_id: { type: integer }
+        confirmations: { type: integer, minimum: 0 }
+        disputes: { type: integer, minimum: 0 }
+        credibility: { type: number, minimum: 0, maximum: 100 }
+        my_vote:
+          oneOf:
+            - { $ref: '#/components/schemas/VoteValue' }
+            - { type: 'null' }
+    Comment:
+      type: object
+      required: [id, report_id, author, text, created_at]
+      properties:
+        id: { type: integer }
+        report_id: { type: integer }
+        author: { $ref: '#/components/schemas/UserSummary' }
+        text: { type: string, maxLength: 1000 }
+        created_at: { type: string, format: date-time }
+    CommentCreate:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string, minLength: 1, maxLength: 1000 }
+    CommentPage:
+      type: object
+      required: [items, count, server_time]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Comment' }
+        count: { type: integer }
+        server_time: { type: string, format: date-time }
+        removed_ids:
+          type: array
+          items: { type: integer }
+    FlagCreate:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, enum: [false_information, inappropriate, spam, other] }
+        note: { type: string, maxLength: 500 }
+    ContentFlag:
+      type: object
+      required: [id, target_type, target_id, reason, created_at]
+      properties:
+        id: { type: integer }
+        target_type: { type: string, enum: [report, comment] }
+        target_id: { type: integer }
+        reason: { type: string, enum: [false_information, inappropriate, spam, other] }
+        note: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+
+    # ---------- događaji i statistika
+    EventSummary:
+      type: object
+      required: [id, title, phenomenon, region, started_at, last_report_at, report_count, centroid, has_expert_comment]
+      properties:
+        id: { type: integer }
+        title: { type: string, examples: ['Tuča, Đakovo, 14. 7. 2026.'] }
+        phenomenon: { $ref: '#/components/schemas/Phenomenon' }
+        region: { $ref: '#/components/schemas/RegionRef' }
+        started_at: { type: string, format: date-time }
+        last_report_at: { type: string, format: date-time }
+        report_count: { type: integer, minimum: 0 }
+        centroid: { $ref: '#/components/schemas/GeoPoint' }
+        has_expert_comment: { type: boolean }
+    EventPage:
+      type: object
+      required: [items, count]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/EventSummary' }
+        count: { type: integer }
+    ExpertComment:
+      type: object
+      required: [text, author, updated_at]
+      properties:
+        text: { type: string, maxLength: 3000 }
+        author: { $ref: '#/components/schemas/UserSummary' }
+        updated_at: { type: string, format: date-time }
+    ExpertCommentUpsert:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string, minLength: 1, maxLength: 3000 }
+    EventDetail:
+      allOf:
+        - { $ref: '#/components/schemas/EventSummary' }
+        - type: object
+          required: [expert_comment, reports, photos]
+          properties:
+            expert_comment:
+              oneOf:
+                - { $ref: '#/components/schemas/ExpertComment' }
+                - { type: 'null' }
+            reports:
+              type: array
+              items: { $ref: '#/components/schemas/ReportSummary' }
+            photos:
+              type: array
+              description: Fotografije svih vidljivih prijava događaja.
+              items:
+                allOf:
+                  - { $ref: '#/components/schemas/Photo' }
+                  - type: object
+                    required: [report_id]
+                    properties:
+                      report_id: { type: integer }
+    FrequencyStatistics:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            required: [region, month, phenomenon, event_count]
+            properties:
+              region: { $ref: '#/components/schemas/RegionRef' }
+              month: { type: string, pattern: '^\d{4}-\d{2}$', examples: ['2026-07'] }
+              phenomenon: { $ref: '#/components/schemas/Phenomenon' }
+              event_count: { type: integer, minimum: 0 }
+
+    # ---------- lokacije i obavijesti
+    FavoriteLocation:
+      type: object
+      required: [id, name, location, weather]
+      properties:
+        id: { type: integer }
+        name: { type: string, maxLength: 60 }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        weather: { $ref: '#/components/schemas/PlaceWeather' }
+    FavoriteLocationCreate:
+      type: object
+      required: [name, location]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+    FavoriteLocationUpdate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+    NotificationRuleCreate:
+      type: object
+      description: |
+        `type=warning` zahtijeva `min_warning_level` (`orange` ili `red`; „narančasta” uključuje i crvena upozorenja).
+        `type=confirmed_report` zahtijeva `phenomenon` i `radius_km` (P-02).
+      required: [type]
+      properties:
+        type: { type: string, enum: [warning, confirmed_report] }
+        min_warning_level: { type: string, enum: [orange, red] }
+        phenomenon: { $ref: '#/components/schemas/Phenomenon' }
+        radius_km: { type: integer, minimum: 1, maximum: 50, default: 10 }
+    NotificationRule:
+      allOf:
+        - type: object
+          required: [id, location_id, created_at]
+          properties:
+            id: { type: integer }
+            location_id: { type: integer }
+            created_at: { type: string, format: date-time }
+        - { $ref: '#/components/schemas/NotificationRuleCreate' }
+    FollowCreate:
+      type: object
+      description: '`type=user` zahtijeva `username`; `type=location` zahtijeva `name`, `location` i `radius_km` (P-02).'
+      required: [type]
+      properties:
+        type: { type: string, enum: [user, location] }
+        username: { $ref: '#/components/schemas/Username' }
+        name: { type: string, maxLength: 60 }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        radius_km: { type: integer, minimum: 1, maximum: 50, default: 10 }
+    Follow:
+      type: object
+      required: [id, type, created_at]
+      properties:
+        id: { type: integer }
+        type: { type: string, enum: [user, location] }
+        user:
+          oneOf:
+            - { $ref: '#/components/schemas/UserSummary' }
+            - { type: 'null' }
+        name: { type: [string, 'null'] }
+        location:
+          oneOf:
+            - { $ref: '#/components/schemas/GeoPoint' }
+            - { type: 'null' }
+        radius_km: { type: [integer, 'null'] }
+        created_at: { type: string, format: date-time }
+    Notification:
+      type: object
+      required: [id, kind, title, body, link, created_at, read_at]
+      properties:
+        id: { type: integer }
+        kind:
+          type: string
+          enum: [warning, nearby_report, followed_user_report, followed_location_report, moderation_decision, sanction, content_removed]
+        title: { type: string }
+        body: { type: string }
+        link:
+          type: object
+          description: Kamo vodi otvaranje obavijesti (UC-014).
+          required: [type, id]
+          properties:
+            type: { type: string, enum: [report, event, warning] }
+            id: { type: integer }
+        created_at: { type: string, format: date-time }
+        read_at: { type: [string, 'null'], format: date-time }
+    NotificationPage:
+      type: object
+      required: [items, count, unread_count, server_time]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Notification' }
+        count: { type: integer }
+        unread_count: { type: integer, minimum: 0 }
+        server_time: { type: string, format: date-time }
+    UnreadCount:
+      type: object
+      required: [unread_count]
+      properties:
+        unread_count: { type: integer, minimum: 0 }
+
+    # ---------- moderacija
+    ModerationDecision:
+      type: object
+      required: [decision]
+      description: Za `reject` je `reason` obavezan i ima najmanje 10 znakova (PR-09).
+      properties:
+        decision: { type: string, enum: [confirm, reject] }
+        reason: { type: string, minLength: 10, maxLength: 1000 }
+    FlagQueueItem:
+      type: object
+      required: [id, target_type, target_id, report_id, region, excerpt, reasons, first_flagged_at, status]
+      properties:
+        id: { type: integer }
+        target_type: { type: string, enum: [report, comment] }
+        target_id: { type: integer }
+        report_id: { type: integer }
+        region: { $ref: '#/components/schemas/RegionRef' }
+        excerpt: { type: string, description: Početak teksta prijave ili komentara. }
+        reasons:
+          type: array
+          items:
+            type: object
+            required: [reason, count]
+            properties:
+              reason: { type: string, enum: [false_information, inappropriate, spam, other] }
+              count: { type: integer, minimum: 1 }
+        first_flagged_at: { type: string, format: date-time }
+        status: { type: string, enum: [open, dismissed, removed] }
+    FlagQueuePage:
+      type: object
+      required: [items, count]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/FlagQueueItem' }
+        count: { type: integer }
+    FlagResolution:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [dismiss, remove_content] }
+        note: { type: string, maxLength: 500 }
+    SanctionCreate:
+      type: object
+      description: Za `posting_ban` je `days` obavezan (P-09).
+      required: [type, reason, related_report_id]
+      properties:
+        type: { type: string, enum: [warning, posting_ban] }
+        days: { type: integer, minimum: 1, maximum: 30 }
+        reason: { type: string, minLength: 10, maxLength: 1000 }
+        related_report_id: { type: integer, description: Prijava iz regije moderatora uz koju je sankcija vezana. }
+    Sanction:
+      type: object
+      required: [id, type, reason, starts_at, ends_at, issued_by]
+      properties:
+        id: { type: integer }
+        type: { type: string, enum: [warning, posting_ban] }
+        reason: { type: string }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: [string, 'null'], format: date-time }
+        issued_by: { $ref: '#/components/schemas/Username' }
+
+    # ---------- administracija
+    AdminUser:
+      type: object
+      required: [id, username, email, roles, moderator_regions, reputation, is_active, date_joined, last_login]
+      properties:
+        id: { type: integer }
+        username: { $ref: '#/components/schemas/Username' }
+        email: { type: string, format: email }
+        roles:
+          type: array
+          items: { $ref: '#/components/schemas/Role' }
+        moderator_regions:
+          type: array
+          items: { $ref: '#/components/schemas/RegionRef' }
+        reputation: { type: integer }
+        is_active: { type: boolean }
+        date_joined: { type: string, format: date-time }
+        last_login: { type: [string, 'null'], format: date-time }
+    AdminUserPage:
+      type: object
+      required: [items, count]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AdminUser' }
+        count: { type: integer }
+    RolesUpdate:
+      type: object
+      description: Uz ulogu `moderator` popis `moderator_region_ids` ne smije biti prazan (F-027).
+      required: [roles, moderator_region_ids]
+      properties:
+        roles:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [moderator, meteorologist] }
+        moderator_region_ids:
+          type: array
+          uniqueItems: true
+          items: { type: integer }
+    SystemSettings:
+      type: object
+      description: Parametri P-01 – P-10 i adrese izvora DHMZ-a (NF-11).
+      required:
+        - max_favorite_locations
+        - radius_km_min
+        - radius_km_max
+        - radius_km_default
+        - max_photos_per_report
+        - max_photo_size_mb
+        - nearest_station_window_min
+        - nearest_station_max_km
+        - trusted_observer_vote_weight
+        - event_grouping_km
+        - event_grouping_hours
+        - reputation_per_vote
+        - reputation_per_decision
+        - trusted_observer_threshold
+        - posting_ban_days_min
+        - posting_ban_days_max
+        - dhmz_fetch_interval_min
+        - dhmz_sources
+      properties:
+        max_favorite_locations: { type: integer, minimum: 1, description: P-01 }
+        radius_km_min: { type: integer, minimum: 1, description: P-02 }
+        radius_km_max: { type: integer, description: P-02 }
+        radius_km_default: { type: integer, description: P-02 }
+        max_photos_per_report: { type: integer, minimum: 1, description: P-03 }
+        max_photo_size_mb: { type: integer, minimum: 1, description: P-03 }
+        nearest_station_window_min: { type: integer, minimum: 1, description: P-04 }
+        nearest_station_max_km: { type: number, minimum: 1, description: P-04 }
+        trusted_observer_vote_weight: { type: number, minimum: 1, description: P-05 }
+        event_grouping_km: { type: number, minimum: 0, description: P-06 }
+        event_grouping_hours: { type: number, minimum: 0, description: P-06 }
+        reputation_per_vote: { type: integer, description: P-07 }
+        reputation_per_decision: { type: integer, description: P-07 }
+        trusted_observer_threshold: { type: integer, description: P-08 }
+        posting_ban_days_min: { type: integer, minimum: 1, description: P-09 }
+        posting_ban_days_max: { type: integer, description: P-09 }
+        dhmz_fetch_interval_min: { type: integer, minimum: 10, description: P-10; nikad kraći od 10 min. }
+        dhmz_sources:
+          type: object
+          required: [measurements_url, forecasts_url, warnings_url]
+          properties:
+            measurements_url: { type: string, format: uri, examples: ['https://vrijeme.hr/hrvatska_n.xml'] }
+            forecasts_url: { type: string, format: uri }
+            warnings_url: { type: string, format: uri }
+    SystemSettingsUpdate:
+      type: object
+      description: Ista polja kao `SystemSettings`; sva su neobavezna.
+      properties:
+        max_favorite_locations: { type: integer, minimum: 1 }
+        radius_km_min: { type: integer, minimum: 1 }
+        radius_km_max: { type: integer }
+        radius_km_default: { type: integer }
+        max_photos_per_report: { type: integer, minimum: 1 }
+        max_photo_size_mb: { type: integer, minimum: 1 }
+        nearest_station_window_min: { type: integer, minimum: 1 }
+        nearest_station_max_km: { type: number, minimum: 1 }
+        trusted_observer_vote_weight: { type: number, minimum: 1 }
+        event_grouping_km: { type: number, minimum: 0 }
+        event_grouping_hours: { type: number, minimum: 0 }
+        reputation_per_vote: { type: integer }
+        reputation_per_decision: { type: integer }
+        trusted_observer_threshold: { type: integer }
+        posting_ban_days_min: { type: integer, minimum: 1 }
+        posting_ban_days_max: { type: integer }
+        dhmz_fetch_interval_min: { type: integer, minimum: 10 }
+        dhmz_sources:
+          type: object
+          properties:
+            measurements_url: { type: string, format: uri }
+            forecasts_url: { type: string, format: uri }
+            warnings_url: { type: string, format: uri }
+    FetchRun:
+      type: object
+      required: [id, source, started_at, finished_at, status, records_saved, error]
+      properties:
+        id: { type: integer }
+        source: { type: string, enum: [measurements, forecasts, warnings] }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: [string, 'null'], format: date-time }
+        status: { type: string, enum: [running, success, failed] }
+        records_saved: { type: integer, minimum: 0 }
+        error: { type: [string, 'null'], description: 'Razlog neuspjeha, npr. nedostupan izvor ili neispravan XML (NF-03).' }
+    FetchRunPage:
+      type: object
+      required: [items, count]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/FetchRun' }
+        count: { type: integer }
+    UsageStatistics:
+      type: object
+      required: [from, to, registered_users, active_users, reports_by_state, fetch_runs]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        registered_users: { type: integer, minimum: 0, description: Novi računi u razdoblju. }
+        active_users: { type: integer, minimum: 0, description: Korisnici s barem jednom prijavom u sustav u razdoblju. }
+        reports_by_state:
+          type: object
+          required: [submitted, pending, confirmed, rejected]
+          properties:
+            submitted: { type: integer, minimum: 0 }
+            pending: { type: integer, minimum: 0 }
+            confirmed: { type: integer, minimum: 0 }
+            rejected: { type: integer, minimum: 0 }
+        fetch_runs:
+          type: object
+          required: [success, failed]
+          properties:
+            success: { type: integer, minimum: 0 }
+            failed: { type: integer, minimum: 0 }
