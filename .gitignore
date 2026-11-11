@@ -83,3 +83,9 @@ out
 
 # pnpm
 .pnpm-store
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
