@@ -7,20 +7,36 @@ type ReportsResponse = {
   server_time: string;
 };
 
-export async function getMyReports(): Promise<ReportsResponse> {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+export async function getMyReports(): Promise<Report[]> {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL || "";
 
-  if (!apiUrl) {
-    throw new Error("Nije postavljena adresa backenda.");
-  }
+  const limit = 100;
+  let offset = 0;
+  let count: number;
 
-  const response = await fetch(`${apiUrl}/api/v1/me/reports`, {
-    credentials: "include"
-  });
+  const allReports: Report[] = [];
 
-  if (!response.ok) {
-    throw new Error("Nije moguće dohvatiti prijave.");
-  }
+  do {
+    const response = await fetch(
+      `${apiUrl}/api/v1/me/reports?limit=${limit}&offset=${offset}`,
+      { credentials: "include" }
+    );
 
-  return response.json();
+    if (!response.ok) {
+      throw new Error("Nije moguće dohvatiti prijave.");
+    }
+
+    const data: ReportsResponse = await response.json();
+
+    allReports.push(...data.items);
+
+    count = data.count;
+    offset += limit;
+
+    if (data.items.length === 0) {
+      break;
+    }
+  } while (offset < count);
+
+  return allReports;
 }
