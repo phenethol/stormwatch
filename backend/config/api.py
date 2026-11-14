@@ -2,7 +2,11 @@ from django.middleware.csrf import get_token
 from ninja import NinjaAPI, Status
 from ninja.security import django_auth
 
+from core.api import router as reports_router
+
 api = NinjaAPI(title="StormWatch API", version="0.1.0", auth=django_auth)
+
+api.add_router("/", reports_router)
 
 
 @api.get("/auth/csrf", auth=None, response={204: None})
