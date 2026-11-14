@@ -84,6 +84,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # --- allauth (headless, samo Google) ---
 HEADLESS_ONLY = True
@@ -103,7 +105,20 @@ SOCIALACCOUNT_PROVIDERS = {
         "SCOPE": ["profile", "email"],
     }
 }
+# Prva prijava traži korisničko ime i potvrdu privatnosti (UC-003, tok 4a)
+SOCIALACCOUNT_AUTO_SIGNUP = False
+ACCOUNT_SIGNUP_FORM_CLASS = "core.forms.PrivacySignupForm"  # polje privacy_notice_accepted
+ACCOUNT_USERNAME_VALIDATORS = "core.validators.username_validators"
 
+# Kamo allauth šalje korisnika ako Google prijava ne uspije. Inače ga vraća na
+# callback_url koji šalje frontend (npr. /?racun=povratak).
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+HEADLESS_FRONTEND_URLS = {
+    "socialaccount_login_error": f"{FRONTEND_URL}/?racun=greska",
+}
+
+# Google računi koji pri prijavi postaju administratori (UC-020), odvojeni zarezom
+ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()]
 # --- Sigurnost u produkciji (NF-12) ---
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

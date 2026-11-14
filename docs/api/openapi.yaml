@@ -195,7 +195,7 @@ paths:
       summary: Dovršetak registracije pri prvoj prijavi
       description: |
         Pri prvoj prijavi korisnik odabire jedinstveno korisničko ime i potvrđuje obavijest o privatnosti.
-        Polje `privacy_notice_accepted` dodajemo vlastitom formom (`SOCIALACCOUNT_FORMS['signup']`).
+        Polje `privacy_notice_accepted` dodajemo vlastitom formom (`ACCOUNT_SIGNUP_FORM_CLASS`).
         Adresa e-pošte preuzima se iz Google računa.
       x-requirements: [F-001]
       x-use-cases: [UC-003]
