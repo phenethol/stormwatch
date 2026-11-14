@@ -1,7 +1,17 @@
+from django.conf import settings
 from django.contrib import admin
+from django.shortcuts import redirect
 from django.urls import include, path
 
 from .api import api
+
+
+def admin_login(request, extra_context=None):
+
+    return redirect(f"{settings.FRONTEND_URL}/?racun=prijava")
+
+
+admin.site.login = admin_login
 
 urlpatterns = [
     path("admin/", admin.site.urls),
