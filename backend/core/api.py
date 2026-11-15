@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import File, Form, Query, Router, Status
 from ninja.errors import ValidationError
@@ -9,7 +10,13 @@ from core.errors import ApiError
 from core.measurements import find_nearest_measurement
 from core.models import Report, ReportPhoto, ReportState
 from core.photos import InvalidPhoto, clean_photo
-from core.schemas import ErrorOut, ReportCreateIn, ReportDetailOut, ReportFilters, ReportPageOut
+from core.schemas import (
+    ErrorOut,
+    ReportCreateIn,
+    ReportDetailOut,
+    ReportFilters,
+    ReportPageOut,
+)
 from core.serializers import report_detail, report_summary
 from core.visibility import is_admin, visible_reports
 
@@ -125,3 +132,10 @@ def list_reports(request, filters: Query[ReportFilters]):
         "server_time": server_time,
         "removed_ids": removed_ids,
     }
+
+
+@router.get("/reports/{report_id}", response=ReportDetailOut, auth=None)
+def get_report(request, report_id: int):
+    report = get_object_or_404(visible_reports(REPORT_QUERYSET, request.user), pk=report_id)
+    return report_detail(request, report)
+

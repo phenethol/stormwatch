@@ -129,3 +129,4 @@ class ReportFilters(Schema):
     updated_since: datetime | None = None
     limit: int = Field(default=200, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
+

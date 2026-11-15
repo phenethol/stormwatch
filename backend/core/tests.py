@@ -599,3 +599,67 @@ class ListReportsTests(TestCase):
 
         self.assertEqual([item["id"] for item in body["items"]], [pending.id])
         self.assertEqual(body["removed_ids"], [confirmed.id])
+
+
+class ReportDetailTests(TestCase):
+    def setUp(self):
+        self.ana = User.objects.create_user(username="ana_motri")
+        self.marko = User.objects.create_user(username="marko")
+        self.pending = make_report(self.marko, state="pending")
+        self.rejected = make_report(self.marko, state="rejected", rejection_reason="Fotografija nije s mjesta događaja.")
+
+    def get(self, report):
+        return self.client.get(f"{URL}/{report.id}")
+
+    def test_visible_report(self):
+        self.client.force_login(self.ana)
+
+        response = self.get(self.pending)
+
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        self.assertEqual(body["id"], self.pending.id)
+        self.assertTrue(openapi_required("ReportDetail") <= body.keys())
+
+    def test_hidden_report_is_404(self):
+        self.client.force_login(self.ana)
+
+        response = self.get(self.rejected)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Not Found"})
+
+    def test_visitor_cannot_see_pending(self):
+        self.assertEqual(self.get(self.pending).status_code, 404)
+
+    def test_missing_report_is_404(self):
+        self.assertEqual(self.client.get(f"{URL}/999999").status_code, 404)
+
+    def test_author_sees_rejection_reason(self):
+        self.client.force_login(self.marko)
+
+        body = self.get(self.rejected).json()
+
+        self.assertEqual(body["rejection_reason"], "Fotografija nije s mjesta događaja.")
+        self.assertFalse(body["can_vote"])
+
+    def test_other_user_can_vote_on_pending(self):
+        self.client.force_login(self.ana)
+
+        self.assertTrue(self.get(self.pending).json()["can_vote"])
+
+    def test_author_cannot_vote_on_own_report(self):
+        self.client.force_login(self.marko)
+
+        self.assertFalse(self.get(self.pending).json()["can_vote"])
+
+    def test_deleted_author_has_no_username(self):
+        confirmed = make_report(self.marko)
+        self.marko.is_deleted = True
+        self.marko.save()
+
+        author = self.get(confirmed).json()["author"]
+
+        self.assertIsNone(author["username"])
+        self.assertTrue(author["is_deleted"])
+
