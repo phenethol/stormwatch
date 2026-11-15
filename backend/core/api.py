@@ -12,8 +12,10 @@ from core.models import Report, ReportPhoto, ReportState
 from core.photos import InvalidPhoto, clean_photo
 from core.schemas import (
     ErrorOut,
+    MyReportFilters,
     ReportCreateIn,
     ReportDetailOut,
+    ReportDetailPageOut,
     ReportFilters,
     ReportPageOut,
 )
@@ -139,3 +141,19 @@ def get_report(request, report_id: int):
     report = get_object_or_404(visible_reports(REPORT_QUERYSET, request.user), pk=report_id)
     return report_detail(request, report)
 
+
+@router.get("/me/reports", response=ReportDetailPageOut, tags=["Profil"])
+def list_my_reports(request, filters: Query[MyReportFilters]):
+    server_time = timezone.now()
+    queryset = REPORT_QUERYSET.filter(author=request.user)
+    if filters.state:
+        queryset = queryset.filter(state=filters.state)
+    if filters.updated_since:
+        queryset = queryset.filter(updated_at__gt=filters.updated_since)
+    queryset = queryset.order_by("-submitted_at", "-id")
+    page = queryset[filters.offset:filters.offset + filters.limit]
+    return {
+        "items": [report_detail(request, report) for report in page],
+        "count": queryset.count(),
+        "server_time": server_time,
+    }

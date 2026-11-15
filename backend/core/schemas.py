@@ -130,3 +130,15 @@ class ReportFilters(Schema):
     limit: int = Field(default=200, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
 
+
+class ReportDetailPageOut(Schema):
+    items: list[ReportDetailOut]
+    count: int
+    server_time: datetime
+
+
+class MyReportFilters(Schema):
+    state: ReportState | None = None
+    updated_since: datetime | None = None
+    limit: int = Field(default=20, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)

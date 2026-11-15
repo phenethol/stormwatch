@@ -663,3 +663,39 @@ class ReportDetailTests(TestCase):
         self.assertIsNone(author["username"])
         self.assertTrue(author["is_deleted"])
 
+
+class MyReportsTests(TestCase):
+    URL = "/api/v1/me/reports"
+
+    def setUp(self):
+        self.marko = User.objects.create_user(username="marko")
+        self.ana = User.objects.create_user(username="ana_motri")
+        self.first = make_report(self.marko, state="pending")
+        self.second = make_report(self.marko, state="rejected", rejection_reason="Duplikat.")
+        make_report(self.ana)
+        self.client.force_login(self.marko)
+
+    def test_requires_login(self):
+        self.client.logout()
+
+        response = self.client.get(self.URL)
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
+
+    def test_lists_only_own_reports_newest_first(self):
+        body = self.client.get(self.URL).json()
+
+        self.assertEqual(body["count"], 2)
+        self.assertEqual([item["id"] for item in body["items"]], [self.second.id, self.first.id])
+        self.assertEqual(body["items"][0]["rejection_reason"], "Duplikat.")
+        self.assertTrue(openapi_required("ReportDetailPage") <= body.keys())
+        self.assertTrue(openapi_required("ReportDetail") <= body["items"][0].keys())
+
+    def test_state_filter(self):
+        body = self.client.get(self.URL, {"state": "pending"}).json()
+
+        self.assertEqual([item["id"] for item in body["items"]], [self.first.id])
+
+    def test_limit_above_100_is_rejected(self):
+        self.assertEqual(self.client.get(self.URL, {"limit": 101}).status_code, 422)
