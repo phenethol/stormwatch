@@ -262,3 +262,57 @@ class CreateReportTests(TestCase):
     def test_wrong_file_type(self):
         pdf = SimpleUploadedFile("dokument.pdf", b"%PDF-1.4", content_type="application/pdf")
         self.assert_rejected(self.post(photos=[pdf]))
+
+    def test_fake_image_with_image_content_type(self):
+        fake = SimpleUploadedFile("slika.jpg", b"ovo nije slika", content_type="image/jpeg")
+        self.assert_rejected(self.post(photos=[fake]))
+
+    def test_exif_is_removed(self):
+        exif = Image.Exif()
+        exif[0x010F] = "Kamera"
+        exif[0x8825] = {2: (45.0, 48.0, 0.0), 4: (15.0, 58.0, 0.0)}
+        buf = io.BytesIO()
+        Image.new("RGB", (40, 30), "red").save(buf, format="JPEG", exif=exif)
+        photo = SimpleUploadedFile("gps.jpg", buf.getvalue(), content_type="image/jpeg")
+
+        response = self.post(photos=[photo])
+
+        self.assertEqual(response.status_code, 201, response.content)
+        stored = ReportPhoto.objects.get()
+        with Image.open(stored.image.path) as image:
+            self.assertEqual(image.format, "JPEG")
+            self.assertEqual(len(image.getexif()), 0)
+
+    def test_exif_orientation_is_applied(self):
+        exif = Image.Exif()
+        exif[0x0112] = 6
+        buf = io.BytesIO()
+        Image.new("RGB", (40, 30), "red").save(buf, format="JPEG", exif=exif)
+        photo = SimpleUploadedFile("okrenuta.jpg", buf.getvalue(), content_type="image/jpeg")
+
+        response = self.post(photos=[photo])
+
+        self.assertEqual(response.status_code, 201, response.content)
+        stored = ReportPhoto.objects.get()
+        self.assertEqual((stored.width, stored.height), (30, 40))
+
+    def test_heic_is_converted_to_jpeg(self):
+        buf = io.BytesIO()
+        Image.new("RGB", (40, 30), "green").save(buf, format="HEIF")
+        photo = SimpleUploadedFile("iphone.heic", buf.getvalue(), content_type="image/heic")
+
+        response = self.post(photos=[photo])
+
+        self.assertEqual(response.status_code, 201, response.content)
+        stored = ReportPhoto.objects.get()
+        self.assertTrue(stored.image.name.endswith(".jpg"))
+        with Image.open(stored.image.path) as image:
+            self.assertEqual(image.format, "JPEG")
+
+    def test_png_stays_png(self):
+        response = self.post()
+
+        self.assertEqual(response.status_code, 201, response.content)
+        stored = ReportPhoto.objects.get()
+        with Image.open(stored.image.path) as image:
+            self.assertEqual(image.format, "PNG")
