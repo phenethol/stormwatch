@@ -1,10 +1,11 @@
 from django.db import transaction
 from ninja import File, Form, Router, Status
-from ninja.errors import HttpError, ValidationError
+from ninja.errors import ValidationError
 from ninja.files import UploadedFile
 
+from core.errors import ApiError
 from core.models import Report, ReportPhoto
-from core.schemas import ReportOut, ReportCreateIn
+from core.schemas import ErrorOut, ReportCreateIn, ReportOut
 
 router = Router(tags=["Prijave"])
 
@@ -17,7 +18,7 @@ def _photo_error(msg):
     return ValidationError([{"type": "value_error", "loc": ["body", "photos"], "msg": msg}])
 
 
-@router.post("/reports", response={201: ReportOut})
+@router.post("/reports", response={201: ReportOut, 413: ErrorOut})
 def create_report(
     request,
     payload: Form[ReportCreateIn],
@@ -28,7 +29,7 @@ def create_report(
         raise _photo_error("Prijava mora imati od 1 do 5 fotografija.")
     for photo in photos:
         if photo.size > MAX_PHOTO_SIZE:
-            raise HttpError(413, "Fotografija je veća od 10 MB.")
+            raise ApiError(413, "Fotografija je veća od 10 MB.", "photo_too_large")
         if photo.content_type not in ALLOWED_TYPES:
             raise _photo_error("Dopušteni formati su JPEG, PNG, WebP i HEIC.")
 

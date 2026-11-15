@@ -36,6 +36,11 @@ class ReportCreateIn(Schema):
         return self
 
 
+class ErrorOut(Schema):
+    detail: str
+    code: str | None = None
+
+
 class PhotoOut(Schema):
     id: int
     url: str

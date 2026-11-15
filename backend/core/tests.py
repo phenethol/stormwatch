@@ -209,7 +209,9 @@ class CreateReportTests(TestCase):
 
     def test_anonymous_user_gets_401(self):
         self.client.logout()
-        self.assert_rejected(self.post(), status=401)
+        response = self.post()
+        self.assert_rejected(response, status=401)
+        self.assertEqual(response.json(), {"detail": "Unauthorized"})
 
     # ---------------------------------------------------------------- PR-01
 
@@ -253,7 +255,9 @@ class CreateReportTests(TestCase):
 
     def test_photo_too_large(self):
         big = SimpleUploadedFile("velika.jpg", b"0" * (10 * 1024 * 1024 + 1), content_type="image/jpeg")
-        self.assert_rejected(self.post(photos=[big]), status=413)
+        response = self.post(photos=[big])
+        self.assert_rejected(response, status=413)
+        self.assertEqual(response.json(), {"detail": "Fotografija je veća od 10 MB.", "code": "photo_too_large"})
 
     def test_wrong_file_type(self):
         pdf = SimpleUploadedFile("dokument.pdf", b"%PDF-1.4", content_type="application/pdf")
