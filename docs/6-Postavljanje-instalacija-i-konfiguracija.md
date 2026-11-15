@@ -151,6 +151,20 @@ Naredba ispisuje broj postaja u bazi; on ovisi o terminu mjerenja jer DHMZ u XML
 
 Obje vrijednosti su javne i nisu tajne.
 
+### Fotografije prijava
+
+Fotografije prijava spremaju se u mapu `backend/media` (`MEDIA_ROOT`), a lokalno ih poslužuje Django na `http://localhost:8000/media/`. Mapa nije u repozitoriju.
+
+Za fotografije u formatu HEIC potreban je paket `pillow_heif` iz `backend/requirements.txt`; za macOS, Windows i Linux postoje gotovi paketi pa `pip install -r requirements.txt` ne traži dodatne alate.
+
+Nakon povlačenja promjena pokrenite migracije, jer prijava ima nova polja:
+
+```bash
+python manage.py migrate
+```
+
+**Provjera:** `GET http://localhost:8000/api/v1/reports` bez prijave vraća `200` i JSON s poljima `items`, `count`, `server_time` i `removed_ids`.
+
 ---
 
 ## 6.3 Javno postavljanje i administracija
