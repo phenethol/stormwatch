@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.google",
     "allauth.headless",
     "core",
+    "dhmz",
 ]
 
 MIDDLEWARE = [
@@ -119,6 +120,10 @@ HEADLESS_FRONTEND_URLS = {
 
 # Google računi koji pri prijavi postaju administratori (UC-020), odvojeni zarezom
 ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()]
+# --- Podaci DHMZ-a (F-026) ---
+DHMZ_MEASUREMENTS_URL = os.environ.get("DHMZ_MEASUREMENTS_URL", "https://vrijeme.hr/hrvatska_n.xml")
+# P-10: zadano 30 min, nikad kraće od 10 min (uvjeti korištenja DHMZ-a)
+DHMZ_FETCH_INTERVAL_MIN = max(10, int(os.environ.get("DHMZ_FETCH_INTERVAL_MIN", "30")))
 # --- Sigurnost u produkciji (NF-12) ---
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
