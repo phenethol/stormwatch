@@ -468,3 +468,134 @@ class NearestMeasurementTests(TestCase):
 
     def test_distance_is_great_circle(self):
         self.assertAlmostEqual(distance_km(45.8144, 15.9726, 45.3369, 14.4425), 130.6, delta=1)
+
+
+def make_report(author, state="confirmed", minutes_ago=10, **fields):
+    data = {
+        "phenomenon": "hail",
+        "intensity": "walnut",
+        "damage": "minor",
+        "lat": "45.81",
+        "lon": "15.98",
+        "observed_at": timezone.now() - timedelta(minutes=minutes_ago),
+    }
+    data.update(fields)
+    return Report.objects.create(author=author, state=state, **data)
+
+
+class ListReportsTests(TestCase):
+    def setUp(self):
+        self.ana = User.objects.create_user(username="ana_motri")
+        self.marko = User.objects.create_user(username="marko")
+        self.admin = User.objects.create_user(username="admin", is_staff=True)
+        self.reports = {
+            state: make_report(self.marko, state=state, minutes_ago=minutes)
+            for minutes, state in enumerate(["submitted", "pending", "confirmed", "rejected"], start=10)
+        }
+
+    def ids(self, response):
+        self.assertEqual(response.status_code, 200, response.content)
+        return {item["id"] for item in response.json()["items"]}
+
+    def test_visitor_sees_only_confirmed(self):
+        response = self.client.get(URL)
+
+        self.assertEqual(self.ids(response), {self.reports["confirmed"].id})
+
+    def test_user_sees_pending_and_confirmed(self):
+        self.client.force_login(self.ana)
+
+        ids = self.ids(self.client.get(URL))
+
+        self.assertEqual(ids, {self.reports["pending"].id, self.reports["confirmed"].id})
+
+    def test_author_sees_all_own_reports(self):
+        self.client.force_login(self.marko)
+
+        self.assertEqual(self.ids(self.client.get(URL)), {r.id for r in self.reports.values()})
+
+    def test_admin_sees_everything(self):
+        self.client.force_login(self.admin)
+
+        self.assertEqual(len(self.ids(self.client.get(URL))), 4)
+
+    def test_newest_observation_first_with_pagination(self):
+        self.client.force_login(self.marko)
+
+        response = self.client.get(URL, {"limit": 2, "offset": 1})
+
+        body = response.json()
+        self.assertEqual(body["count"], 4)
+        self.assertEqual(
+            [item["id"] for item in body["items"]],
+            [self.reports["pending"].id, self.reports["confirmed"].id],
+        )
+
+    def test_response_matches_openapi_report_page(self):
+        body = self.client.get(URL).json()
+
+        self.assertTrue(openapi_required("ReportPage") <= body.keys())
+        self.assertTrue(openapi_required("ReportSummary") <= body["items"][0].keys())
+
+    def test_phenomenon_filter_accepts_several_values(self):
+        snow = make_report(self.marko, phenomenon="snow", intensity="weak")
+        storm = make_report(self.marko, phenomenon="storm_wind", intensity="strong")
+
+        response = self.client.get(f"{URL}?phenomenon=snow&phenomenon=storm_wind")
+
+        self.assertEqual(self.ids(response), {snow.id, storm.id})
+
+    def test_unknown_phenomenon_is_rejected(self):
+        self.assertEqual(self.client.get(URL, {"phenomenon": "tornado"}).status_code, 422)
+
+    def test_observed_period_filter(self):
+        old = make_report(self.marko, minutes_ago=600)
+
+        response = self.client.get(URL, {"observed_to": (timezone.now() - timedelta(hours=5)).isoformat()})
+
+        self.assertEqual(self.ids(response), {old.id})
+
+    def test_bbox_filter(self):
+        rijeka = make_report(self.marko, lat="45.33", lon="14.44")
+
+        response = self.client.get(URL, {"bbox": "14.0,45.0,15.0,46.0"})
+
+        self.assertEqual(self.ids(response), {rijeka.id})
+
+    def test_invalid_bbox_is_rejected(self):
+        self.assertEqual(self.client.get(URL, {"bbox": "zagreb"}).status_code, 422)
+
+    def test_valuable_only(self):
+        valuable = make_report(self.marko, is_valuable=True)
+
+        self.assertEqual(self.ids(self.client.get(URL, {"valuable_only": "true"})), {valuable.id})
+
+    def test_region_and_event_filters_return_nothing_until_implemented(self):
+        self.assertEqual(self.ids(self.client.get(URL, {"region_id": 1})), set())
+        self.assertEqual(self.ids(self.client.get(URL, {"event_id": 1})), set())
+
+    def test_limit_above_500_is_rejected(self):
+        self.assertEqual(self.client.get(URL, {"limit": 501}).status_code, 422)
+
+    def test_include_deleted_requires_admin(self):
+        self.client.force_login(self.ana)
+
+        response = self.client.get(URL, {"include_deleted": "true"})
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "admin_only")
+
+    def test_updated_since_returns_changes_and_removed_ids(self):
+        Report.objects.update(updated_at=timezone.now() - timedelta(hours=1))
+        first = self.client.get(URL).json()
+        pending = self.reports["pending"]
+        pending.state = "confirmed"
+        pending.save()
+        confirmed = self.reports["confirmed"]
+        confirmed.state = "rejected"
+        confirmed.save()
+
+        body = self.client.get(URL, {"updated_since": first["server_time"]}).json()
+
+        self.assertEqual([item["id"] for item in body["items"]], [pending.id])
+        self.assertEqual(body["removed_ids"], [confirmed.id])

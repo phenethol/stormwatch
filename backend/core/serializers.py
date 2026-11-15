@@ -1,11 +1,6 @@
-from core.models import ReportState
+from core.visibility import VOTABLE_STATES, is_admin
 
-VOTABLE_STATES = (ReportState.PENDING, ReportState.CONFIRMED)
 NO_VOTES_CREDIBILITY = 50.0
-
-
-def is_admin(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser)
 
 
 def _absolute(request, file_field):

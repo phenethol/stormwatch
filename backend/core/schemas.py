@@ -7,6 +7,9 @@ from core.models import Phenomenon, Intensity, Damage, LocationSource, ReportSta
 from dhmz.schemas import MeasurementOut
 from pydantic import Field, model_validator
 
+BBOX_PATTERN = r"^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$"
+
+
 class ReportCreateIn(Schema):
     phenomenon: Phenomenon
     intensity: Intensity
@@ -105,3 +108,24 @@ class ReportDetailOut(ReportSummaryOut):
     my_vote: str | None
     can_vote: bool
     event_title: str | None
+
+
+class ReportPageOut(Schema):
+    items: list[ReportSummaryOut]
+    count: int
+    server_time: datetime
+    removed_ids: list[int]
+
+
+class ReportFilters(Schema):
+    phenomenon: list[Phenomenon] | None = None
+    observed_from: datetime | None = None
+    observed_to: datetime | None = None
+    bbox: str | None = Field(default=None, pattern=BBOX_PATTERN)
+    region_id: int | None = None
+    event_id: int | None = None
+    valuable_only: bool = False
+    include_deleted: bool = False
+    updated_since: datetime | None = None
+    limit: int = Field(default=200, ge=1, le=500)
+    offset: int = Field(default=0, ge=0)
