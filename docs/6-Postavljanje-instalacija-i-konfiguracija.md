@@ -113,6 +113,44 @@ Ako se adresa poslužiteljskog dijela razlikuje od `http://localhost:8080`, kori
 **Analiza primjera:** Postupak ima jasan redoslijed: stvoriti bazu podataka, uspostaviti shemu i pristup, konfigurirati veze, pokrenuti oba procesa i provjeriti spremljenu prijavu. Naredbe i očekivani rezultati dovoljno su konkretni da se može dijagnosticirati nepotpuno postavljanje. Oni nadopunjuju kratki put iz README-a do pokrenute aplikacije umjesto da tvrde kako samo učitana web-stranica dokazuje uspješnu instalaciju.
 </details>
 
+### Prijava Google računom
+
+Prijava je moguća samo Google računom, pa lokalno pokretanje traži OAuth klijent u Google Cloud Consoleu.
+
+**Google Cloud Console:** u *APIs & Services → Credentials* otvorite OAuth klijent tipa *Web application* i pod *Authorized redirect URIs* dodajte `http://localhost:5173/accounts/google/login/callback/`. Adresa je na portu frontenda jer Vite zahtjeve na `/accounts` prosljeđuje Djangu. Za javno postavljanje dodajte istu putanju na javnoj adresi.
+
+**Varijable u `backend/.env`** (predložak je `backend/.env.example`):
+
+| Varijabla | Tajna | Uloga |
+| --- | --- | --- |
+| `SECRET_KEY` | Da | Ključ za potpisivanje sesija i kolačića; mora biti postavljen i neprazan. Lokalno se generira naredbom `python -c "import secrets; print(secrets.token_urlsafe(50))"`. |
+| `GOOGLE_CLIENT_ID` | Ne | ID OAuth klijenta iz Google Cloud Consolea |
+| `GOOGLE_CLIENT_SECRET` | Da | Tajna OAuth klijenta; dobiva se od člana tima koji upravlja Google projektom i nikad se ne upisuje u `.env.example` |
+| `FRONTEND_URL` | Ne | Adresa frontenda, lokalno `http://localhost:5173`; na nju se korisnik vraća nakon neuspjele prijave, a na nju preusmjerava i `/admin/login/` |
+| `ADMIN_EMAILS` | Osobni podatak | Google adrese administratora odvojene zarezom; ne objavljuju se u repozitoriju |
+| `ALLOWED_HOSTS` | Ne | Lokalno `localhost,127.0.0.1` |
+
+**Klijentski dio:** razvojni poslužitelj mora Djangu prosljeđivati `/api/v1`, `/_allauth` i `/accounts` s opcijom `changeOrigin: false`, da kolačići i adresa povratka s Googlea ostanu na `localhost:5173`.
+
+**Provjera:** otvorite `http://localhost:5173`, odaberite „Prijava” i prijavite se Google računom. Pri prvoj prijavi upišite korisničko ime i potvrdite obavijest o privatnosti. Korisnik čija je adresa u `ADMIN_EMAILS` nakon prijave može otvoriti `http://localhost:8000/admin/`. Administracija nema obrazac s lozinkom, pa `createsuperuser` nije potreban.
+
+### Podaci DHMZ-a
+
+Mjerenja DHMZ-a preuzimaju se sama pri prvom otvaranju karte. Za odmah popunjenu bazu, u mapi `backend`:
+
+```bash
+python manage.py fetch_dhmz
+```
+
+Naredba ispisuje broj postaja u bazi; on ovisi o terminu mjerenja jer DHMZ u XML-u navodi samo postaje koje su poslale podatke. Naredbu ne treba pokretati češće od jednom u 10 minuta.
+
+| Varijabla | Zadano | Uloga |
+| --- | --- | --- |
+| `DHMZ_FETCH_INTERVAL_MIN` | 30 | Interval P-10 u minutama; vrijednost manja od 10 podiže se na 10 |
+| `DHMZ_MEASUREMENTS_URL` | `https://vrijeme.hr/hrvatska_n.xml` | Adresa XML-a s mjerenjima |
+
+Obje vrijednosti su javne i nisu tajne.
+
 ---
 
 ## 6.3 Javno postavljanje i administracija

@@ -4,9 +4,12 @@ from ninja.security import django_auth
 
 from core.api import router as reports_router
 
+from dhmz.api import router as dhmz_router
+
 api = NinjaAPI(title="StormWatch API", version="0.1.0", auth=django_auth)
 
 api.add_router("/", reports_router)
+api.add_router("/", dhmz_router)
 
 
 @api.get("/auth/csrf", auth=None, response={204: None})
