@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, dev ]
 
+# Jobs only check out and read the code.
+permissions:
+  contents: read
+
 jobs:
   frontend:
     runs-on: ubuntu-latest
