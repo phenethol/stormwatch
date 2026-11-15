@@ -1,7 +1,7 @@
 import io
 import shutil
 import tempfile
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from allauth.account.models import EmailAddress
 from allauth.socialaccount.adapter import get_adapter
@@ -316,3 +316,41 @@ class CreateReportTests(TestCase):
         stored = ReportPhoto.objects.get()
         with Image.open(stored.image.path) as image:
             self.assertEqual(image.format, "PNG")
+
+    def test_banned_user_gets_403_with_code(self):
+        self.user.posting_banned_until = timezone.make_aware(datetime(2099, 1, 2, 8, 30))
+        self.user.save()
+
+        response = self.post()
+
+        self.assert_rejected(response, status=403)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Objavljivanje vam je zabranjeno do 2. 1. 2099. 08:30.", "code": "posting_banned"},
+        )
+
+    def test_expired_ban_allows_posting(self):
+        self.user.posting_banned_until = timezone.now() - timedelta(minutes=1)
+        self.user.save()
+
+        response = self.post()
+
+        self.assertEqual(response.status_code, 201, response.content)
+
+    def test_trusted_observer_report_is_confirmed(self):
+        self.user.is_trusted_observer = True
+        self.user.save()
+
+        response = self.post()
+
+        self.assertEqual(response.status_code, 201, response.content)
+        report = Report.objects.get()
+        self.assertEqual(report.state, "confirmed")
+        self.assertTrue(report.is_trusted_observer_report)
+
+    def test_regular_report_is_pending(self):
+        self.post()
+
+        report = Report.objects.get()
+        self.assertEqual(report.state, "pending")
+        self.assertFalse(report.is_trusted_observer_report)

@@ -1,10 +1,11 @@
 from django.db import transaction
+from django.utils import timezone
 from ninja import File, Form, Router, Status
 from ninja.errors import ValidationError
 from ninja.files import UploadedFile
 
 from core.errors import ApiError
-from core.models import Report, ReportPhoto
+from core.models import Report, ReportPhoto, ReportState
 from core.photos import InvalidPhoto, clean_photo
 from core.schemas import ErrorOut, ReportCreateIn, ReportOut
 
@@ -30,16 +31,34 @@ def _clean_photos(photos):
         raise _photo_error("Dopušteni formati su JPEG, PNG, WebP i HEIC.")
 
 
-@router.post("/reports", response={201: ReportOut, 413: ErrorOut})
+def _check_posting_ban(user):
+    banned_until = user.posting_banned_until
+    if banned_until and banned_until > timezone.now():
+        until = timezone.localtime(banned_until)
+        raise ApiError(
+            403,
+            f"Objavljivanje vam je zabranjeno do {until.day}. {until.month}. {until.year}. {until:%H:%M}.",
+            "posting_banned",
+        )
+
+
+@router.post("/reports", response={201: ReportOut, 403: ErrorOut, 413: ErrorOut})
 def create_report(
     request,
     payload: Form[ReportCreateIn],
     photos: File[list[UploadedFile]],
 ):
+    user = request.user
+    _check_posting_ban(user)
     cleaned_photos = _clean_photos(photos)
 
     with transaction.atomic():
-        report = Report.objects.create(author=request.user, **payload.dict())
+        report = Report.objects.create(
+            author=user,
+            state=ReportState.CONFIRMED if user.is_trusted_observer else ReportState.PENDING,
+            is_trusted_observer_report=user.is_trusted_observer,
+            **payload.dict(),
+        )
         for photo in cleaned_photos:
             ReportPhoto.objects.create(report=report, image=photo)
 
