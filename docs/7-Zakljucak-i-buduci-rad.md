@@ -26,6 +26,9 @@
 - **Upozorenja i regije DHMZ-a (F-005, F-007).** U prvoj inačici `/warnings` i `/regions` vraćaju 501, pa karta umjesto sloja upozorenja prikazuje poruku. Potrebno je raščlanjivanje upozorenja DHMZ-a i granica regija.
 - **Povijest mjerenja postaje (F-026).** Mjerenja se već spremaju, ali `GET /stations/{id}/measurements` nije izložen.
 - **Raspoređivač preuzimanja.** Zamijeniti lijeno preuzimanje periodičkim poslom, da se podaci osvježavaju i kad nitko ne otvara kartu.
+- **Regije i moderatori (PR-06, PR-07).** Prijave zasad nemaju regiju, pa moderator vidi isto što i registrirani korisnik. Potrebno je uvesti regije, pridružiti im prijave i moderatoru prikazati prijave iz njegovih regija.
+- **Glasanje, komentari i događaji (PR-02 do PR-04).** Polja za potvrde, osporavanja, vjerodostojnost, komentare i događaj već postoje u odgovorima API-ja, ali imaju početne vrijednosti.
+- **Trajna pohrana fotografija i sličice.** Fotografije premjestiti s lokalnog diska u pohranu objekata i pri predaji generirati sličice za popise i kartu.
 
 ---
 

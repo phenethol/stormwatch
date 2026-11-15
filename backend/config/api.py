@@ -3,6 +3,7 @@ from ninja import NinjaAPI, Status
 from ninja.security import django_auth
 
 from core.api import router as reports_router
+from core.errors import ApiError
 
 from dhmz.api import router as dhmz_router
 
@@ -10,6 +11,11 @@ api = NinjaAPI(title="StormWatch API", version="0.1.0", auth=django_auth)
 
 api.add_router("/", reports_router)
 api.add_router("/", dhmz_router)
+
+
+@api.exception_handler(ApiError)
+def api_error(request, exc):
+    return api.create_response(request, exc.body(), status=exc.status_code)
 
 
 @api.get("/auth/csrf", auth=None, response={204: None})
