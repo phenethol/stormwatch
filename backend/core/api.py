@@ -5,6 +5,7 @@ from ninja.errors import ValidationError
 from ninja.files import UploadedFile
 
 from core.errors import ApiError
+from core.measurements import find_nearest_measurement
 from core.models import Report, ReportPhoto, ReportState
 from core.photos import InvalidPhoto, clean_photo
 from core.schemas import ErrorOut, ReportCreateIn, ReportOut
@@ -52,12 +53,17 @@ def create_report(
     _check_posting_ban(user)
     cleaned_photos = _clean_photos(photos)
 
+    data = payload.dict()
+    measurement, distance = find_nearest_measurement(data["lat"], data["lon"], data["observed_at"])
+
     with transaction.atomic():
         report = Report.objects.create(
             author=user,
             state=ReportState.CONFIRMED if user.is_trusted_observer else ReportState.PENDING,
             is_trusted_observer_report=user.is_trusted_observer,
-            **payload.dict(),
+            nearest_measurement=measurement,
+            nearest_distance_km=distance,
+            **data,
         )
         for photo in cleaned_photos:
             ReportPhoto.objects.create(report=report, image=photo)

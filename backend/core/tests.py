@@ -13,7 +13,10 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 from PIL import Image
 
+from dhmz.models import Measurement, Station
+
 from .forms import PrivacySignupForm
+from .measurements import distance_km, find_nearest_measurement
 from .models import Report, ReportPhoto, User
 from .validators import username_validators
 
@@ -354,3 +357,72 @@ class CreateReportTests(TestCase):
         report = Report.objects.get()
         self.assertEqual(report.state, "pending")
         self.assertFalse(report.is_trusted_observer_report)
+
+    def test_nearest_measurement_is_stored(self):
+        station = Station.objects.create(name="Zagreb-Grič", lat="45.8144", lon="15.9726")
+        measurement = Measurement.objects.create(
+            station=station, measured_at=timezone.now() - timedelta(minutes=20), temperature_c=12.5
+        )
+
+        response = self.post(lat="45.81", lon="15.98")
+
+        self.assertEqual(response.status_code, 201, response.content)
+        report = Report.objects.get()
+        self.assertEqual(report.nearest_measurement, measurement)
+        self.assertAlmostEqual(report.nearest_distance_km, 0.75, places=2)
+
+    def test_no_measurement_nearby(self):
+        response = self.post(lat="45.81", lon="15.98")
+
+        self.assertEqual(response.status_code, 201, response.content)
+        report = Report.objects.get()
+        self.assertIsNone(report.nearest_measurement)
+        self.assertIsNone(report.nearest_distance_km)
+
+
+class NearestMeasurementTests(TestCase):
+    def setUp(self):
+        self.observed_at = timezone.now()
+        self.gric = Station.objects.create(name="Zagreb-Grič", lat="45.8144", lon="15.9726")
+        self.maksimir = Station.objects.create(name="Zagreb-Maksimir", lat="45.8222", lon="16.0336")
+        self.rijeka = Station.objects.create(name="Rijeka", lat="45.3369", lon="14.4425")
+
+    def measure(self, station, minutes):
+        return Measurement.objects.create(station=station, measured_at=self.observed_at + timedelta(minutes=minutes))
+
+    def find(self):
+        return find_nearest_measurement(45.81, 15.98, self.observed_at)
+
+    def test_closest_station_wins(self):
+        gric = self.measure(self.gric, -50)
+        self.measure(self.maksimir, 0)
+
+        measurement, distance = self.find()
+
+        self.assertEqual(measurement, gric)
+        self.assertLess(distance, 1)
+
+    def test_closest_measurement_in_time_for_same_station(self):
+        self.measure(self.gric, -50)
+        closer = self.measure(self.gric, 10)
+
+        measurement, _ = self.find()
+
+        self.assertEqual(measurement, closer)
+
+    def test_measurement_outside_time_window_is_ignored(self):
+        self.measure(self.gric, -61)
+        self.measure(self.gric, 61)
+        maksimir = self.measure(self.maksimir, 60)
+
+        measurement, _ = self.find()
+
+        self.assertEqual(measurement, maksimir)
+
+    def test_station_further_than_50_km_is_ignored(self):
+        self.measure(self.rijeka, 0)
+
+        self.assertEqual(self.find(), (None, None))
+
+    def test_distance_is_great_circle(self):
+        self.assertAlmostEqual(distance_km(45.8144, 15.9726, 45.3369, 14.4425), 130.6, delta=1)
