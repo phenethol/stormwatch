@@ -22,7 +22,9 @@ Za svaki UML dijagram čuvajte čitljivu sliku i PlantUML izvor, kako je opisano
 
 | Odluka | Razmatrana alternativa | Projektno specifično obrazloženje i kompromis |
 | --- | --- | --- |
-|  |  |  |
+| Prijava Google računom preko biblioteke django-allauth u načinu bez vlastitih stranica (headless), uz sesijski kolačić | Vlastiti pristupni token (npr. JWT) koji poslužitelj izdaje nakon provjere Googleova ID tokena, kako to opisuju F-002 i UC-003 | django-allauth provodi tok OAuth 2.0 i OpenID Connect s Googleom, provjerava ID token i vodi registraciju, pa tim ne piše ni ne održava vlastito izdavanje i opoziv tokena. Prijavljeni korisnik dobiva sesijski kolačić `sessionid`, a zahtjevi koji mijenjaju podatke štite se od CSRF-a. Kompromis: frontend i backend moraju dijeliti podrijetlo (lokalno preko Vite proxyja), a opis tokena u F-002 i UC-003 (koraci 5 i 6) treba uskladiti s implementacijom. |
+| Administratori se određuju popisom Google adresa u varijabli `ADMIN_EMAILS` | Ručna dodjela ovlasti u bazi ili `createsuperuser` s lozinkom | Sustav ne pohranjuje lozinke (C-02, NF-04), pa se administrator ne može prijaviti obrascem s lozinkom. Korisnik čija je adresa na popisu pri prijavi Google računom dobiva ovlasti administratora, a `/admin/login/` preusmjerava na prijavu u frontendu. Kompromis: novi administrator traži promjenu varijable okruženja i ponovno pokretanje poslužitelja. |
+| Podaci DHMZ-a preuzimaju se pri zahtjevu za postajama (lijeno preuzimanje) | Zaseban raspoređivač (cron posao na Renderu ili Celery beat) | Besplatni smještaj na Renderu nema raspoređivač, a zaseban proces povećao bi trošak i složenost postavljanja. Prvi zahtjev za `/api/v1/stations` nakon isteka intervala P-10 pokreće preuzimanje, a uvjetni UPDATE nad tablicom `FetchStatus` osigurava da ga pokrene samo jedan zahtjev. Kompromis: dok nitko ne otvara kartu, podaci se ne osvježavaju, a zahtjev koji pokrene preuzimanje čeka njegov završetak. |
 
 Objasnite glavne arhitekturne odluke bez ponavljanja popisa tehnologija. Ako važna odluka ima ADR, dovoljno je u tablici navesti njegov ID.
 
@@ -232,7 +234,9 @@ ADR pišite samo za odluku čije će obrazloženje ostati važno i nakon promjen
 
 | Aspekt | Mehanizam | Pravilo | Mjesto primjene |
 | --- | --- | --- | --- |
-| [Npr. Sigurnost] | [Npr. Autorizacija korisnika] | [Npr. Ovlasti se provjeravaju na poslužiteljskoj strani za svaki zaštićeni zahtjev; skrivanje elemenata korisničkog sučelja nije dovoljna zaštita.] | [Npr. Middleware za autorizaciju / zaštita API usmjernika.] |
+| Sigurnost | Autentikacija | Svaki endpoint API-ja po zadanom traži prijavljenog korisnika; javni endpointi to izričito isključuju (`auth=None`). Zahtjev bez valjane sesije dobiva 401. | `NinjaAPI(auth=django_auth)` u `backend/config/api.py`; javni usmjerivač u `backend/dhmz/api.py` |
+| Sigurnost | Zaštita od CSRF-a | Zahtjev koji mijenja podatke mora poslati zaglavlje `X-CSRFToken` jednako kolačiću `csrftoken`, koji postavlja `GET /api/v1/auth/csrf`. | `CsrfViewMiddleware` i `django_auth` (`backend/config/settings.py`, `backend/config/api.py`) |
+| Privatnost | Registracija bez lozinke uz potvrdu privatnosti | Račun nastaje tek kad korisnik potvrdi obavijest o privatnosti; vrijeme potvrde se sprema, a korisnik nema upotrebljivu lozinku (F-001, NF-04). | `PrivacySignupForm` u `backend/core/forms.py`; `ACCOUNT_SIGNUP_FORM_CLASS` u `backend/config/settings.py` |
 | [Npr. Validacija podataka] | [Npr. Provjera ulaznih podataka] | [Npr. Geoprostorni podaci, uključujući koordinate, provjeravaju se prije pohrane.] | [Npr. Sloj za obradu zahtjeva / odgovarajuća usluga.] |
 
 <details>
@@ -263,7 +267,10 @@ Obrasci poput injektiranja ovisnosti (engl. Dependency Injection) ili repozitori
 | --- | --- | --- |
 | *Npr. Pohrana slika u lokalni file sustav* | *Pri ponovnom pokretanju kontejnera slike će biti izgubljene.* | *Prihvaćeni tehnički dug za demo verziju. U budućnosti planirana migracija na S3 (AWS).* |
 | *Npr. Nepostojanje paginacije na API-ju* | *Moguće usporenje klijenta pri dohvaćanju velike količine podataka iz baze.* | *Ograničen broj testnih unosa. Dodavanje paginacije ostavljeno za sljedeću iteraciju.* |
-|  |  |  |
+| Prijava ovisi o tome da frontend i backend dijele podrijetlo | Ako se frontend posluži s druge domene, preglednik ne šalje kolačiće `sessionid` i `csrftoken`, pa prijava i zaštićeni zahtjevi ne rade. Lokalno Vite proxy mora imati `changeOrigin: false`; inače Django Googleu šalje adresu povratka na `127.0.0.1:8000` i Google vraća `redirect_uri_mismatch`. | Za javno postavljanje treba odlučiti hoće li frontend i backend biti na istom podrijetlu; uz različito podrijetlo trebaju `SameSite=None`, CORS i `CSRF_TRUSTED_ORIGINS`. |
+| Ovlasti administratora samo se dodjeljuju pri prijavi | Uklanjanje adrese iz `ADMIN_EMAILS` ne oduzima već dodijeljene ovlasti. | Prihvaćeno; ovlasti se oduzimaju ručno u administracijskom sučelju. |
+| Postaja se prepoznaje po nazivu iz XML-a jer DHMZ ne objavljuje šifru postaje | Promjena naziva (npr. „Split-Marjan-Marjan” u „Split-Marjan”) stvara drugu postaju na istom mjestu. Stara nestaje s karte nakon 3 h bez mjerenja, ali ostaje u popisu postaja. | Prihvaćeno za prvu inačicu; kasnije prepoznavati postaje po koordinatama. |
+| Preuzimanje podataka DHMZ-a izvodi se unutar HTTP zahtjeva | Ako DHMZ sporo odgovara, zahtjev koji je pokrenuo preuzimanje čeka do približno 20 s (dva pokušaja s ograničenjem od 10 s). | Prihvaćeno; pogađa najviše jedan zahtjev po intervalu P-10. Kasnije premjestiti preuzimanje u raspoređivač. |
 
 **Poslovni ili domenski rizici, ako su značajni**
 

@@ -23,6 +23,10 @@
 
 [Navedite mali broj opravdanih poboljšanja i ograničite se na nekoliko prioriteta. Razlikujte nedovršene funkcionalnosti potrebne za ispunjenje izvornog opsega od neobaveznih proširenja. Za svako ukratko objasnite korist i što bi trebalo promijeniti.]
 
+- **Upozorenja i regije DHMZ-a (F-005, F-007).** U prvoj inačici `/warnings` i `/regions` vraćaju 501, pa karta umjesto sloja upozorenja prikazuje poruku. Potrebno je raščlanjivanje upozorenja DHMZ-a i granica regija.
+- **Povijest mjerenja postaje (F-026).** Mjerenja se već spremaju, ali `GET /stations/{id}/measurements` nije izložen.
+- **Raspoređivač preuzimanja.** Zamijeniti lijeno preuzimanje periodičkim poslom, da se podaci osvježavaju i kad nitko ne otvara kartu.
+
 ---
 
 >**Završna provjera:** Tvrdnje o dovršenim funkcionalnostima podudaraju se s postavljenom aplikacijom i rezultatima ispitivanja. Nedovršen rad jasno je naveden; planovi za budući rad ne prikazuju se kao dovršene funkcionalnosti. Utrošeno vrijeme i pojedinačni doprinosi dokumentirani su u dokumentu [A. Pregled aktivnosti grupe](A-Pregled-aktivnosti-grupe.md).

@@ -27,7 +27,22 @@ Odaberite normalne slučajeve, granične vrijednosti i neuspjehe koji otkrivaju 
 
 | ID ispitnog slučaja | Scenarij ispitivanja | Ulazni podaci | Očekivani rezultat | Stvarni rezultat | Ishod | Koraci ispitivanja |
 | --- | --- | --- | --- | --- | --- | --- |
-|  |  |  |  |  |  |  |
+| CT-AUTH-01 | Komponenta: CSRF kolačić | GET `/api/v1/auth/csrf` bez prijave | 204 i postavljen kolačić `csrftoken` | Kao očekivano. | Prošlo | Automatski: `backend/core/tests.py`, `CsrfTests` |
+| CT-AUTH-02 | Komponenta: registracija na čekanju | Stanje nakon povratka s Googlea za Google račun bez računa u sustavu; GET `/_allauth/browser/v1/auth/session` | 401 s tokom `provider_signup` označenim kao `is_pending`, pa frontend prikazuje obrazac za korisničko ime | Kao očekivano. | Prošlo | Automatski: `SignupTests.test_pending_signup_is_reported_to_frontend` |
+| CT-AUTH-03 | Komponenta: registracija bez potvrde privatnosti | Korisničko ime `ana_k`, bez `privacy_notice_accepted` | 400; račun se ne stvara | Kao očekivano. | Prošlo | Automatski: `SignupTests.test_signup_requires_privacy_notice`, `PrivacyFormTests.test_form_without_privacy_is_invalid` |
+| CT-AUTH-04 | Komponenta: pravilo korisničkog imena | Valjana: `ana`, `ana_k.2026`, `ana-k`; nevaljana: `ab`, `šime`, `ime s razmakom`, 31 znak | Valjana imena prihvaćena, nevaljana odbijena; registracija s imenom `šime` vraća 400 | Kao očekivano. | Prošlo | Automatski: `PrivacyFormTests.test_username_rule`, `SignupTests.test_signup_rejects_invalid_username` |
+| CT-AUTH-05 | Komponenta: uspješna registracija | Korisničko ime `ana_k`, potvrda privatnosti, Google adresa `ana@gmail.com` | 200; račun s Google adresom, zabilježenim vremenom potvrde privatnosti i bez upotrebljive lozinke; korisnik je prijavljen | Kao očekivano. | Prošlo | Automatski: `SignupTests.test_signup_creates_user_with_google_email` |
+| CT-AUTH-06 | Komponenta: administrator iz `ADMIN_EMAILS` | Prijava korisnika s adresom s popisa i korisnika s drugom adresom; GET `/admin/login/` | Prvi dobiva `is_staff` i `is_superuser` i otvara `/admin/`, drugi ne; `/admin/login/` preusmjerava na `?racun=prijava` u frontendu | Kao očekivano. | Prošlo | Automatski: `AdminTests` |
+| ST-AUTH-01 | Sustav: prva prijava Google računom | Google račun koji još nema račun u StormWatchu | Nakon Googlea frontend traži korisničko ime i potvrdu privatnosti; nakon potvrde korisnik je prijavljen | Nije pokrenuto. | Nije pokrenuto | Pokrenuti Docker, Django i frontend s proxyjem (odjeljak 6.2); odabrati „Prijava”, prijaviti se na Googleu, upisati korisničko ime, potvrditi privatnost i provjeriti da je korisnik prijavljen |
+| ST-AUTH-02 | Sustav: ponovna prijava i odjava | Isti Google račun nakon ST-AUTH-01 | Ponovna prijava ne traži korisničko ime; nakon odjave korisnik je neprijavljen, a Google račun ostaje prijavljen | Nije pokrenuto. | Nije pokrenuto | Odjaviti se, ponovno odabrati „Prijava”, zatim se odjaviti i osvježiti stranicu |
+| CT-DHMZ-01 | Komponenta: raščlanjivanje XML-a DHMZ-a | Isječak XML-a za 14. 11. 2026., termin 18 h | Vrijeme mjerenja 18:00 po zagrebačkom vremenu (17:00 UTC); temperatura 4,6 °C; smjer vjetra NE pretvoren u SI | Kao očekivano. | Prošlo | Automatski: `backend/dhmz/tests.py`, `ParserTests.test_reads_time_and_values` |
+| CT-DHMZ-02 | Komponenta: podaci koji nedostaju | Vrijednosti „-”, vlaga 0, tlak „837.0*” | „-” i vlaga 0 postaju null; tlak se čita kao 837,0 hPa | Kao očekivano. | Prošlo | Automatski: `ParserTests.test_missing_values_become_none`, `test_pressure_with_asterisk_is_read` |
+| CT-DHMZ-03 | Komponenta: neispravan XML | Nepotpun XML; XML bez postaja | Raščlanjivanje se odbija; ništa se ne sprema | Kao očekivano. | Prošlo | Automatski: `ParserTests.test_broken_xml_is_rejected` |
+| CT-DHMZ-04 | Komponenta: ponovljeno preuzimanje | Isti termin preuzet dvaput, zatim novi termin | Nema dvostrukih mjerenja; novi termin dodaje povijest i postaje posljednje mjerenje | Kao očekivano. | Prošlo | Automatski: `FetchTests` |
+| CT-DHMZ-05 | Komponenta: DHMZ nedostupan (NF-03) | Uspješno preuzimanje, zatim pogreška veze | Ishod „failed” je zabilježen; postojeća mjerenja i vrijeme posljednjeg uspjeha ostaju | Kao očekivano. | Prošlo | Automatski: `FetchTests.test_failure_keeps_existing_data` |
+| CT-DHMZ-06 | Komponenta: interval preuzimanja P-10 | Dva zahtjeva unutar intervala; zahtjev nakon 31 min | DHMZ se unutar intervala poziva jednom, a nakon isteka intervala ponovno | Kao očekivano. | Prošlo | Automatski: `StationApiTests.test_fetches_at_most_once_per_interval`, `test_fetches_again_after_interval` |
+| CT-DHMZ-07 | Komponenta: API postaja | GET `/stations`, `/stations/{id}`, `/stations/999999`, `/data-status`, `/warnings` bez prijave | 200 s izvorom „DHMZ”; 404 za nepostojeću postaju; stanje preuzimanja „success”; 501 za upozorenja | Kao očekivano. | Prošlo | Automatski: `StationApiTests` |
+| ST-DHMZ-01 | Sustav: postaje na karti | Lokalno pokrenuti Docker, Django i Vite (`VITE_LIVE=true`) | Kartica „Postaje” prikazuje broj postaja koji ispiše `fetch_dhmz`; temperature su na karti; na karti piše „DHMZ · dohvat u HH:MM” | Nije pokrenuto. | Nije pokrenuto | Pokrenuti `python manage.py fetch_dhmz`, otvoriti `http://localhost:5173`, otvoriti karticu „Postaje” i usporediti broj postaja s ispisom naredbe |
 
 Scenarij određuje funkcionalnost koja se ispituje. Opaženi rezultat i **Prošlo**, **Nije prošlo** ili **Blokirano** unesite tek nakon izvođenja; do tada koristite **Nije pokrenuto**. Koraci ispitivanja moraju omogućiti drugom članu tima da ponovi provjeru. Izvorni kod automatiziranog ispitivanja čuvajte u Git repozitoriju projekta i iz relevantnog slučaja postavite poveznicu na njega; za ručnu provjeru ovdje dokumentirajte korake. Odaberite normalne slučajeve, smislene nevaljane ulaze ili granice, neuspjehe i relevantna svojstva kvalitete. Funkcionalnost koja nije implementirana predstavlja nedovršen opseg; provjera kako aplikacija obrađuje nevaljani ID valjano je negativno ispitivanje.
 
@@ -139,7 +154,7 @@ const assert = require('assert');
 
 **Cilj:** Navesti reviziju aplikacije, okruženje i dokaze potrebne za tumačenje stvarnih rezultata u tablici ispitnih slučajeva. Dodajte kratak zapis izvođenja kada te podatke nije moguće jasno prenijeti poveznicom na kod ispitivanja ili CI izvođenje.
 
-**Najnovije izvođenje ili dokaz:** [Poveznica na CI izvođenje, bilješku ručnog ispitivanja ili kratak sažetak izvođenja s datumom, revizijom i okruženjem.]
+**Najnovije izvođenje ili dokaz:** 15. 11. 2026.; grana `backend/dhmz-postaje`, revizija `3a24a00` uz dodani `backend/dhmz/tests.py`; Windows 11, Python 3.14.5, PostgreSQL 16 u Dockeru; `python manage.py test` u mapi `backend`: 43 ispitivanja cijelog poslužiteljskog dijela, OK. Ispitni slučajevi CT-AUTH-01 do CT-AUTH-06 i CT-DHMZ-01 do CT-DHMZ-07 dio su tog izvođenja.
 
 Stupci **Stvarni rezultat** i **Ishod** iznad mjerodavni su rezultati za pojedinačni slučaj. Nemojte kopirati sve rezultate u drugu obaveznu tablicu. Neuspješna i blokirana izvođenja zabilježite iskreno; pri ponovnom izvođenju zadržite relevantnu povijest umjesto prikazivanja starog uspješnog rezultata kao trenutačnog.
 
@@ -162,7 +177,12 @@ Stupci **Stvarni rezultat** i **Ishod** iznad mjerodavni su rezultati za pojedin
 
 | Problem ili ograničenje | Korisniku vidljiv učinak ili neprovjereno ponašanje | Dokaz ili poveznica na zadatak |
 | --- | --- | --- |
-|  |  |  |
+| Potpis Googleova ID tokena ne provjerava se | django-allauth ID token preuzima izravno od Googlea preko TLS-a i tada ne provjerava potpis, što OpenID Connect Core 1.0 (odjeljak 3.1.3.7) dopušta; izdavatelj, primatelj i rok valjanosti se provjeravaju. NF-04 traži i provjeru potpisa. | django-allauth 65.21.1, `socialaccount/providers/google/views.py` (`_decode_id_token`) |
+| Automatska ispitivanja prijave ne kontaktiraju Google | Ispitivanja registracije počinju od stanja nakon povratka s Googlea; preusmjeravanje na Google i razmjena koda za token provjeravaju se samo ručno (ST-AUTH-01). | `backend/core/tests.py` (`start_google_signup`) |
+| Klijentski dio u repozitoriju (`frontend/`) još nema prijavu Google računom | Prijava se lokalno može ispitati samo s klijentom koji Djangu prosljeđuje `/api/v1`, `/_allauth` i `/accounts`. | `frontend/vite.config.ts` |
+| Parametar `bbox` se zanemaruje | `GET /api/v1/stations` uvijek vraća sve postaje (60–70, ovisno o terminu mjerenja). | `backend/dhmz/api.py` |
+| Postaje nemaju regiju ni nadmorsku visinu | `region_id` i `altitude_m` su null; XML DHMZ-a ih ne sadrži, a regije još nisu uvedene. | Odstupanje od `docs/api/openapi.yaml` |
+| Automatska ispitivanja postaja ne zovu stvarni DHMZ | Ispitivanja podmeću isječak XML-a; stvarni format provjerava se ručno naredbom `python manage.py fetch_dhmz`. | `backend/dhmz/tests.py` |
 
 Detaljnu reprodukciju nedostatka i napredak čuvajte u alatu za praćenje zadataka, uz kratku poveznicu ovdje za nedostatke koji bitno utječu na aplikaciju ili demonstraciju. Ako je obavezna funkcionalnost nedovršena, jasno to navedite u završnim rezultatima; nemojte je nazivati poznatim nedostatkom niti uspješnim ispitivanjem. Iskreno zabilježite i nedostajuću mogućnost ispitivanja, primjerice vanjskog pružatelja koji tijekom izvođenja nije bio dostupan. Ovaj odjeljak ne zahtijeva drugi potpuni dnevnik problema.
 
