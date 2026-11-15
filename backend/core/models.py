@@ -74,9 +74,21 @@ class Report(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     description = models.TextField(max_length=2000, blank=True, default="")
     state = models.CharField(max_length=20, default=ReportState.PENDING, choices=ReportState.choices)
+    rejection_reason = models.TextField(blank=True, default="")
+    is_trusted_observer_report = models.BooleanField(default=False)
+    is_valuable = models.BooleanField(default=False)
+    nearest_measurement = models.ForeignKey(
+        "dhmz.Measurement", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    nearest_distance_km = models.FloatField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        ordering = ["-observed_at"]
+        indexes = [
+            models.Index(fields=["state", "observed_at"]),
+            models.Index(fields=["updated_at"]),
+        ]
         constraints = [
             models.CheckConstraint(
                 name="report_observed_at_window",
