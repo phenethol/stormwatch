@@ -3,7 +3,8 @@ from django.utils import timezone
 
 from ninja import Schema
 
-from core.models import Phenomenon, Intensity, Damage, LocationSource, HAIL_INTENSITIES, OTHER_INTENSITIES
+from core.models import Phenomenon, Intensity, Damage, LocationSource, ReportState, HAIL_INTENSITIES, OTHER_INTENSITIES
+from dhmz.schemas import MeasurementOut
 from pydantic import Field, model_validator
 
 class ReportCreateIn(Schema):
@@ -41,23 +42,66 @@ class ErrorOut(Schema):
     code: str | None = None
 
 
+class GeoPointOut(Schema):
+    lat: float
+    lon: float
+
+
+class UserSummaryOut(Schema):
+    username: str | None
+    photo_url: str | None
+    is_trusted_observer: bool
+    is_meteorologist: bool
+    is_deleted: bool
+
+
+class RegionRefOut(Schema):
+    id: int
+    name: str
+
+
 class PhotoOut(Schema):
     id: int
     url: str
+    thumbnail_url: str
     width: int | None
     height: int | None
 
 
-class ReportOut(Schema):
+class NearestMeasurementOut(Schema):
+    station_id: int
+    station_name: str
+    distance_km: float
+    measurement: MeasurementOut
+
+
+class ReportSummaryOut(Schema):
     id: int
-    phenomenon: str
-    intensity: str
-    damage: str
-    lat: float
-    lon: float
-    location_source: str
+    phenomenon: Phenomenon
+    intensity: Intensity
+    location: GeoPointOut
     observed_at: datetime
-    submitted_at: datetime
-    description: str
-    state: str
+    state: ReportState
+    author: UserSummaryOut
+    confirmations: int
+    disputes: int
+    credibility: float
+    is_trusted_observer_report: bool
+    is_valuable: bool
+    event_id: int | None
+    thumbnail_url: str | None
+    comment_count: int
+    updated_at: datetime
+
+
+class ReportDetailOut(ReportSummaryOut):
+    damage: Damage
+    description: str | None
     photos: list[PhotoOut]
+    submitted_at: datetime
+    region: RegionRefOut | None
+    nearest_measurement: NearestMeasurementOut | None
+    rejection_reason: str | None
+    my_vote: str | None
+    can_vote: bool
+    event_title: str | None

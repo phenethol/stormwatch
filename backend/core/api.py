@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.http import HttpResponse
 from django.utils import timezone
 from ninja import File, Form, Router, Status
 from ninja.errors import ValidationError
@@ -8,9 +9,14 @@ from core.errors import ApiError
 from core.measurements import find_nearest_measurement
 from core.models import Report, ReportPhoto, ReportState
 from core.photos import InvalidPhoto, clean_photo
-from core.schemas import ErrorOut, ReportCreateIn, ReportOut
+from core.schemas import ErrorOut, ReportCreateIn, ReportDetailOut
+from core.serializers import report_detail
 
 router = Router(tags=["Prijave"])
+
+REPORT_QUERYSET = Report.objects.select_related(
+    "author", "nearest_measurement__station"
+).prefetch_related("photos")
 
 MAX_PHOTOS = 5
 MAX_PHOTO_SIZE = 10 * 1024 * 1024
@@ -43,9 +49,10 @@ def _check_posting_ban(user):
         )
 
 
-@router.post("/reports", response={201: ReportOut, 403: ErrorOut, 413: ErrorOut})
+@router.post("/reports", response={201: ReportDetailOut, 403: ErrorOut, 413: ErrorOut})
 def create_report(
     request,
+    response: HttpResponse,
     payload: Form[ReportCreateIn],
     photos: File[list[UploadedFile]],
 ):
@@ -68,22 +75,6 @@ def create_report(
         for photo in cleaned_photos:
             ReportPhoto.objects.create(report=report, image=photo)
 
-    return Status(201, _report_out(request, report))
-
-
-def _report_out(request, report):
-    return {
-        **{f: getattr(report, f) for f in (
-            "id", "phenomenon", "intensity", "damage", "lat", "lon",
-            "location_source", "observed_at", "submitted_at", "description", "state",
-        )},
-        "photos": [
-            {
-                "id": p.id,
-                "url": request.build_absolute_uri(p.image.url),
-                "width": p.width,
-                "height": p.height,
-            }
-            for p in report.photos.all()
-        ],
-    }
+    report = REPORT_QUERYSET.get(pk=report.pk)
+    response["Location"] = f"{request.path.rstrip('/')}/{report.pk}"
+    return Status(201, report_detail(request, report))

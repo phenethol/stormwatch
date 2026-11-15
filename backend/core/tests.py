@@ -3,9 +3,11 @@ import shutil
 import tempfile
 from datetime import datetime, timedelta
 
+import yaml
 from allauth.account.models import EmailAddress
 from allauth.socialaccount.adapter import get_adapter
 from allauth.socialaccount.models import SocialAccount, SocialLogin
+from django.conf import settings
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -125,6 +127,20 @@ class AdminTests(TestCase):
 # ---------------------------------------------------------------- predaja prijave (PR-01)
 
 URL = "/api/v1/reports"
+OPENAPI_SCHEMAS = yaml.safe_load(
+    (settings.BASE_DIR.parent / "docs" / "api" / "openapi.yaml").read_text(encoding="utf-8")
+)["components"]["schemas"]
+
+
+def openapi_required(name):
+    schema = OPENAPI_SCHEMAS[name]
+    parts = schema.get("allOf", [schema])
+    required = set()
+    for part in parts:
+        if "$ref" in part:
+            required |= openapi_required(part["$ref"].rsplit("/", 1)[-1])
+        required |= set(part.get("required", []))
+    return required
 MEDIA_ROOT = tempfile.mkdtemp()
 
 
@@ -173,18 +189,37 @@ class CreateReportTests(TestCase):
         response = self.post()
 
         self.assertEqual(response.status_code, 201, response.content)
-        body = response.json()
-        self.assertEqual(body["phenomenon"], "hail")
-        self.assertEqual(body["intensity"], "walnut")
-        self.assertEqual(body["state"], "pending")
-        self.assertEqual(body["location_source"], "gps")
-        self.assertEqual(len(body["photos"]), 1)
-        self.assertEqual(body["photos"][0]["width"], 40)
-        self.assertEqual(body["photos"][0]["height"], 30)
-
         report = Report.objects.get()
         self.assertEqual(report.author, self.user)
         self.assertEqual(report.photos.count(), 1)
+        self.assertEqual(response["Location"], f"/api/v1/reports/{report.id}")
+
+        body = response.json()
+        self.assertEqual(body["id"], report.id)
+        self.assertEqual(body["phenomenon"], "hail")
+        self.assertEqual(body["intensity"], "walnut")
+        self.assertEqual(body["damage"], "minor")
+        self.assertEqual(body["state"], "pending")
+        self.assertEqual(body["location"], {"lat": 45.3083, "lon": 18.4078})
+        self.assertEqual(body["description"], "Tuča veličine oraha.")
+        self.assertEqual(body["author"]["username"], "ana_motri")
+        self.assertEqual(body["confirmations"], 0)
+        self.assertEqual(body["disputes"], 0)
+        self.assertEqual(body["credibility"], 50.0)
+        self.assertFalse(body["can_vote"])
+        self.assertIsNone(body["my_vote"])
+        self.assertIsNone(body["nearest_measurement"])
+        self.assertEqual(len(body["photos"]), 1)
+        self.assertEqual(body["photos"][0]["width"], 40)
+        self.assertEqual(body["photos"][0]["height"], 30)
+        self.assertEqual(body["thumbnail_url"], body["photos"][0]["url"])
+
+    def test_response_matches_openapi_report_detail(self):
+        body = self.post().json()
+
+        self.assertTrue(openapi_required("ReportDetail") <= body.keys())
+        self.assertTrue(openapi_required("UserSummary") <= body["author"].keys())
+        self.assertTrue(openapi_required("Photo") <= body["photos"][0].keys())
 
     def test_description_is_optional(self):
         data = self.data()
@@ -370,6 +405,13 @@ class CreateReportTests(TestCase):
         report = Report.objects.get()
         self.assertEqual(report.nearest_measurement, measurement)
         self.assertAlmostEqual(report.nearest_distance_km, 0.75, places=2)
+        nearest = response.json()["nearest_measurement"]
+        self.assertEqual(nearest["station_id"], station.id)
+        self.assertEqual(nearest["station_name"], "Zagreb-Grič")
+        self.assertEqual(nearest["distance_km"], 0.75)
+        self.assertEqual(nearest["measurement"]["temperature_c"], 12.5)
+        self.assertEqual(nearest["measurement"]["source"], "DHMZ")
+        self.assertTrue(openapi_required("NearestMeasurement") <= nearest.keys())
 
     def test_no_measurement_nearby(self):
         response = self.post(lat="45.81", lon="15.98")
