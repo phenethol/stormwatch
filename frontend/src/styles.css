@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+:root {
+  font-family: "Instrument Sans Variable", "Segoe UI", sans-serif;
+  color: #16293e;
+  color-scheme: light;
+  --ink: #16293e;
+  --muted: #536478;
+  --subtle: #66768a;
+  --surface: #fff;
+  --paper: #f5f7fa;
+  --line: #dce4ed;
+  --strong-line: #c3ceda;
+  --blue: #205ecf;
+  --blue-hover: #194faa;
+  --blue-text: #1c55bd;
+  --blue-soft: #edf3ff;
+  --accent-line: #2861b3;
+  --focus: #225fcc;
+  --navy: #172b46;
+  --raised: #fff;
+  --field: #fff;
+  --map-water: #d6e5ec;
+  --pin-bg: #174a87;
+  --pin-ink: #fff;
+  --pin-edge: #f5f9ff;
+  --pending-bg: #f7faff;
+  --pending-ink: #1d4d8a;
+  --pending-edge: #1d4d8a;
+  --marker-halo: #ffffffb8;
+  --chip-bg: #fbfcfe;
+  --chip-ink: #13263c;
+  --chip-edge: #c5d0de;
+  --chip-accent: #2463cf;
+  --chip-muted: #4c5e75;
+  --map-yellow: #f2c74e;
+  --map-yellow-edge: #9d6a0c;
+  --map-orange: #f78a51;
+  --map-orange-edge: #c9511f;
+  --map-red: #e96162;
+  --map-red-edge: #bd2632;
+  --shadow: 0 4px 14px #15284013, 0 1px 3px #15284013;
+  --mono: "IBM Plex Mono", monospace;
+  --warning-yellow: #795307;
+  --warning-yellow-bg: #fcf0cc;
+  --warning-orange: #9a3f1b;
+  --warning-orange-bg: #fce8dc;
+  --warning-red: #a52231;
+  --warning-red-bg: #ffe5e8;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #eef3f9;
+  --muted: #c3cfde;
+  --subtle: #a8b8cc;
+  --surface: #1a2433;
+  --paper: #131b28;
+  --raised: #243145;
+  --field: #111925;
+  --line: #34445c;
+  --strong-line: #5f7593;
+  --blue: #2c69cf;
+  --blue-hover: #3877de;
+  --blue-text: #a9cbff;
+  --blue-soft: #233a5c;
+  --accent-line: #6fa8f5;
+  --focus: #aad0ff;
+  --navy: #0f1a2c;
+  --shadow: 0 6px 16px #0006, 0 1px 3px #0005;
+  --map-water: #1c2939;
+  --pin-bg: #74b4ff;
+  --pin-ink: #04142a;
+  --pin-edge: #eaf4ff;
+  --pending-bg: #1b2d4a;
+  --pending-ink: #93b4de;
+  --pending-edge: #5f80ab;
+  --marker-halo: #0a1220b8;
+  --chip-bg: #2a4a78;
+  --chip-ink: #ffffff;
+  --chip-edge: #7aa7e0;
+  --chip-accent: #9ccbff;
+  --chip-muted: #d3e2f5;
+  --map-yellow: #e6bd5c;
+  --map-yellow-edge: #f7d98c;
+  --map-orange: #ee9560;
+  --map-orange-edge: #ffc59c;
+  --map-red: #e26c7e;
+  --map-red-edge: #ffa6b1;
+  --warning-yellow: #ffdfa1;
+  --warning-yellow-bg: #4c3b23;
+  --warning-orange: #ffcbac;
+  --warning-orange-bg: #513529;
+  --warning-red: #ffc3cd;
+  --warning-red-bg: #4b2c39;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--paper); }
+button:not(:disabled), summary { cursor: pointer; }
+button:disabled { cursor: default; opacity: .55; }
+a { color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, .detail-scroll:focus-visible, .leaflet-marker-icon:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+button, input, select, textarea { font: inherit; }
+button { color: inherit; }
+svg { flex-shrink: 0; }
+
+/* Zajednički gumbi (završni M1 dizajn) */
+.primary, .secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 39px; gap: 7px; border-radius: 7px; padding: 7px 12px; font-size: 14px; font-weight: 650; line-height: 1.25; }
+.primary { border: 1px solid transparent; background: var(--blue); color: #fff; }
+.primary:hover:not(:disabled) { background: var(--blue-hover); }
+.secondary { border: 1px solid var(--strong-line); background: var(--surface); color: var(--ink); }
+.secondary:hover:not(:disabled), .secondary[aria-pressed=true] { border-color: var(--accent-line); background: var(--blue-soft); color: var(--blue-text); }
+.text-button { display: inline-flex; gap: 5px; align-items: center; border: 0; background: transparent; color: var(--blue-text); font-weight: 650; padding: 0; text-align: left; }
+.text-button:hover { text-decoration: underline; }
+
+/* Zajedničke obavijesti i poruke o grešci */
+.inline-note { padding: 10px 11px; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; color: var(--muted); font-size: 13px; line-height: 1.45; margin: 0 0 10px; }
+.inline-note.error { color: var(--warning-red); background: var(--warning-red-bg); }
+
+/* Komponenta Page */
+.page-inner { display: grid; gap: 14px; align-content: start; width: 100%; max-width: 940px; margin: 0 auto; padding: 24px 24px 44px; }
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px; }
+.page-head h1 { margin: 0; font-size: 25px; font-weight: 740; line-height: 1.15; letter-spacing: -.045em; overflow-wrap: anywhere; }
+.page-head p { margin: 5px 0 0; max-width: 68ch; color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+/* Komponenta Pager */
+.pagination { display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-between; align-items: center; margin-top: 4px; }
+.pagination-count { color: var(--subtle); font: 500 11px var(--mono); }
+
+/* Prilagodba zajedničkih komponenti za male ekrane */
+@media (max-width: 850px), (max-width: 1024px) and (max-height: 520px) {
+  .page-inner { padding: 16px max(12px, env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  .page-head h1 { font-size: 22px; }
+}
