@@ -8,7 +8,8 @@ export type ReportState =
 export type Phenomenon =
   | "hail"
   | "storm_wind"
-  | "heavy_rain_flood"
+  | "heavy_rain"
+  | "flood"
   | "snow"
   | "glaze_ice"
   | "waterspout";
