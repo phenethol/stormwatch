@@ -173,25 +173,41 @@ python manage.py migrate
 
 | **Postavljeni podsustav** | **Infrastruktura i izvor koda** | **Naredbe izgradnje i pokretanja** | **Konfiguracija i varijable okruženja** |
 | --- | --- | --- | --- |
-| **Klijentski dio** | [Usluga smještaja, grana i putanja mape] | [Naredba izgradnje i izlazni direktorij] | [Javne varijable vidljive pregledniku] |
-| **Poslužiteljski dio** | [Usluga smještaja, grana i putanja mape] | [Naredba izgradnje i naredba pokretanja] | [Port, veza s bazom podataka, tajni ključevi] |
-| **Baza podataka** | [Upravljana baza podataka i regija smještaja] | [Mehanizam izvođenja migracija sheme i trenutak uspostavljanja sheme] | [Zaštićeni pristupni podaci baze] |
+| **Klijentski dio** | Ista Render web-usluga kao poslužiteljski dio; grana `main`; mapa `frontend/` | Gradi ga `backend/build.sh`: `npm ci --include=dev && npm run build` u mapi `frontend/`. Izlaz `frontend/dist/` Django poslužuje preko WhiteNoisea s korijena domene, a na `/` vraća `index.html`. | Nema zasebnih varijabli. API se zove relativnim putanjama, pa `VITE_API_BASE_URL` ostaje prazan. Varijable `VITE_*` čitaju se pri izgradnji i vidljive su u pregledniku, pa ne smiju sadržavati tajne. |
+| **Poslužiteljski dio** | Render Web Service, Python okruženje; grana `main`; Root Directory `backend` | Izgradnja `./build.sh` (frontend, `pip install`, `collectstatic`, `migrate`); pokretanje `gunicorn config.wsgi:application`. Gunicorn sluša na `0.0.0.0` i portu iz varijable `PORT` koju postavlja Render. | Varijable u tablici ispod. Verziju Pythona određuje `backend/.python-version` (3.14), a verziju Node.js-a `NODE_VERSION`. |
+| **Baza podataka** | Render PostgreSQL u istoj regiji kao web-usluga | Shemu stvara i ažurira `python manage.py migrate --noinput` iz `build.sh` pri svakom postavljanju, prije pokretanja nove inačice. Ručne SQL skripte nisu potrebne. | `DATABASE_URL` s **internim** URL-om baze, postavljen samo u web-usluzi |
 
 **CI i CD:** Kontinuirana integracija (engl. *continuous integration*, CI) automatizira izgradnju i provjere pri integriranju promjena. Kratica CD može označavati dva različita postupka. **Kontinuirana isporuka** (engl. *continuous delivery*) održava provjerenu inačicu spremnom za postavljanje, ali postavljanje u produkciju može zahtijevati ručnu odluku. **Kontinuirano postavljanje** (engl. *continuous deployment*) automatski postavlja uspješno provjerenu promjenu u produkciju. Navedite postupak koji projekt stvarno koristi; nemojte koristiti oznaku CI/CD samo zato što alat podržava automatizaciju.
 U tablici i opisu navedite **nazive i svrhu** varijabli, gdje ovlašteni održavatelj dobiva njihove vrijednosti i kojoj se usluzi svaka postavlja. Razlikujte konfiguraciju vidljivu pregledniku od tajnih podataka poslužiteljskog dijela.
 
 ### Postupak postavljanja
 
-1. **Infrastruktura baze podataka:** [Postupak kreiranja instance baze i primjene migracija.]
-2. **Postavljanje poslužiteljskog dijela:** [Povezivanje repozitorija, postavljanje tajnih varijabli i pokretanje.]
-3. **Izgradnja i objava klijentskog dijela:** [Postavljanje javnog URL-a poslužitelja i generiranje statičkih datoteka.]
-4. **Završno povezivanje:** [Postavljanje dozvoljenih ishodišta (CORS) i verifikacija javne domene.]
+1. **Infrastruktura baze podataka:** u Renderu stvoriti PostgreSQL bazu u regiji u kojoj će raditi web-usluga i kopirati njezin *Internal Database URL*. Migracije se ne pokreću ručno; izvodi ih `build.sh` pri svakom postavljanju.
+2. **Postavljanje poslužiteljskog dijela:** stvoriti *Web Service* iz repozitorija, grana `main`, Root Directory `backend`, Build Command `./build.sh`, Start Command `gunicorn config.wsgi:application`. *Auto-Deploy* isključiti, jer postavljanje pokreće CD nakon uspješnog CI-ja (vidi „Postupak ažuriranja”). Varijable okruženja:
+
+   | Varijabla | Tajna | Vrijednost na Renderu |
+   | --- | --- | --- |
+   | `SECRET_KEY` | Da | Nova nasumična vrijednost, različita od lokalne |
+   | `DATABASE_URL` | Da | Interni URL baze iz 1. koraka |
+   | `ALLOWED_HOSTS` | Ne | Domena usluge, npr. `<usluga>.onrender.com` (bez `https://`) |
+   | `CSRF_TRUSTED_ORIGINS` | Ne | `https://<usluga>.onrender.com` (sa shemom) |
+   | `FRONTEND_URL` | Ne | Ista adresa kao `CSRF_TRUSTED_ORIGINS`, bez kose crte na kraju; frontend je na istoj domeni |
+   | `GOOGLE_CLIENT_ID` | Ne | ID OAuth klijenta |
+   | `GOOGLE_CLIENT_SECRET` | Da | Tajna OAuth klijenta; dobiva se od člana tima koji upravlja Google projektom |
+   | `ADMIN_EMAILS` | Osobni podatak | Google adrese administratora. Stanje prijava mijenja se u Django Adminu, pa bez ove varijable nitko ne može potvrditi prijavu. |
+   | `NODE_VERSION` | Ne | `24`, kao u CI-ju |
+   | `DEBUG` | Ne | Ne postavlja se. Svaka vrijednost osim `1` isključuje način za razvoj i uključuje preusmjeravanje na HTTPS i sigurne kolačiće. |
+
+3. **Izgradnja i objava klijentskog dijela:** nema zasebne usluge. `build.sh` gradi frontend prije Pythonovih koraka, a Django ga poslužuje s iste domene kao API. Ako od prije postoji zasebno statičko web-mjesto za frontend, treba ga obrisati, a iz GitHuba ukloniti tajnu `RENDER_DEPLOY_HOOK_URL`.
+4. **Završno povezivanje:** u Google Cloud Consoleu pod *Authorized redirect URIs* dodati `https://<usluga>.onrender.com/accounts/google/login/callback/`, doslovno, s kosom crtom na kraju. Ako je OAuth consent screen u statusu *Testing*, prijaviti se mogu samo dodani testni korisnici. CORS nije potreban jer su frontend i API na istom podrijetlu. Rad provjeriti prema ST-DEPLOY-01 i javnu adresu upisati u `README.md`.
+
+**Fotografije prijava:** uz isključen `DEBUG` Django ne poslužuje `/media/`, a disk web-usluge briše se pri svakom postavljanju, pa fotografije u javnoj inačici nisu dostupne (vidi 4.7).
 
 ### Pristup i administracija
 
-- **Nadzor rada i zapisi pogrešaka:** [Objasnite gdje i kako ovlašteni članovi tima pristupaju zapisima poslužitelja (engl. *logs*) te kako pregledati pogreške aplikacije.]
-- **Upravljanje administratorskim ovlastima:** [Ako aplikacija ima administratorsku ili moderatorsku ulogu, navedite putanju do sučelja i proceduru dodjele uloge bez javnog otkrivanja pristupnih podataka. Ako nema administratorskog sučelja, to kratko navedite.]
-- **Postupak ažuriranja:** [Opišite kako izmjena iz glavne grane dolazi do postavljene aplikacije. Navedite izvodi li se postavljanje ručno, kontinuiranom isporukom ili kontinuiranim postavljanjem te koje provjere prethode postavljanju.]
+- **Nadzor rada i zapisi pogrešaka:** u Renderu, na stranici web-usluge, *Events* prikazuje postavljanja s izlazom izgradnje (`npm`, `pip`, `migrate`), a *Logs* izlaz Gunicorna. Projekt nema postavku `LOGGING`, pa uz isključen `DEBUG` Django ne ispisuje iznimke koje završe odgovorom 500, i one se u *Logs* ne vide. Neuspjela preuzimanja DHMZ-a ipak se vide, jer ih `dhmz/services.py` bilježi na razini `WARNING`, koju Python bez postavke `LOGGING` ispisuje na standardni izlaz pogrešaka.
+- **Upravljanje administratorskim ovlastima:** administracijsko sučelje je na `/admin/`. Ovlasti dobiva korisnik čija je Google adresa u `ADMIN_EMAILS`, pri sljedećoj prijavi Google računom; obrazac s lozinkom ne postoji, a `/admin/login/` preusmjerava na prijavu u frontendu. Uklanjanje adrese iz varijable ne oduzima već dodijeljene ovlasti; one se oduzimaju u administracijskom sučelju.
+- **Postupak ažuriranja:** kontinuirano postavljanje. Nakon pusha ili spajanja u `main` izvodi se *CI Pipeline* (`.github/workflows/ci.yml`): za frontend `npm ci`, `npm run lint` i `npm run build`; za backend `manage.py check`, provjera nedostajućih migracija, migracije i ispitivanja nad PostgreSQL-om. Tek ako CI uspije, *CD Pipeline* (`.github/workflows/cd.yml`) poziva Render deploy hook iz tajne `RENDER_BACKEND_DEPLOY_HOOK_URL`. Render tada izvodi `build.sh`, uključujući migracije, i pokreće novu inačicu.
 - **Sigurnosne kopije i oporavak:** [Dokumentirajte samo ako ga je tim stvarno konfigurirao i koristio.]
 
 Opisujte samo okruženja i automatizirane postupke koji stvarno postoje. Okruženje za pripremu, kontinuirana integracija (CI), kontinuirana isporuka ili kontinuirano postavljanje (CD), krajnja točka za provjeru stanja, sigurnosne kopije i druge operativne mogućnosti navode se samo ako ih tim stvarno koristi.

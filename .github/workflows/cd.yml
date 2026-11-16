@@ -15,25 +15,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  frontend:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render Deploy Hook (frontend)
-        env:
-          HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        run: |
-          if [ -n "$HOOK_URL" ]; then
-            curl -fsS -X POST "$HOOK_URL"
-          else
-            echo "RENDER_DEPLOY_HOOK_URL not set. Skipping."
-          fi
-
+  # One Render web service: backend/build.sh also builds the React frontend,
+  # and Django serves it, so there is no separate frontend deploy.
   backend:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Render Deploy Hook (backend)
+      - name: Trigger Render Deploy Hook (Django + frontend)
         env:
           HOOK_URL: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}
         run: |

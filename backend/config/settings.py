@@ -85,6 +85,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Izgrađeni React frontend (npm run build u ../frontend). WhiteNoise ga poslužuje s korijena
+# domene, a "/" vraća index.html. Bez builda (lokalni razvoj uz Vite) ovo ostaje isključeno.
+FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
+if FRONTEND_DIST.is_dir():
+    WHITENOISE_ROOT = FRONTEND_DIST
+    WHITENOISE_INDEX_FILE = True
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 

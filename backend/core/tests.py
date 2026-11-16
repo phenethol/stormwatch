@@ -2,6 +2,7 @@ import io
 import shutil
 import tempfile
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import yaml
 from allauth.account.models import EmailAddress
@@ -45,6 +46,41 @@ class CsrfTests(TestCase):
         response = self.client.get("/api/v1/auth/csrf")
         self.assertEqual(response.status_code, 204)
         self.assertIn("csrftoken", response.cookies)
+
+
+class FrontendServingTests(TestCase):
+    """Na Renderu Django (WhiteNoise) poslužuje izgrađeni frontend, a rute backenda ostaju Djangove."""
+
+    def setUp(self):
+        dist = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, dist)
+        (dist / "assets").mkdir()
+        (dist / "index.html").write_text('<div id="root"></div>', encoding="utf-8")
+        (dist / "assets" / "index-abc123.js").write_text("console.log(1)", encoding="utf-8")
+        # WhiteNoise čita postavke kad se učita middleware, a ispitni klijent ga učitava pri prvom zahtjevu
+        overrides = override_settings(WHITENOISE_ROOT=dist, WHITENOISE_INDEX_FILE=True)
+        overrides.enable()
+        self.addCleanup(overrides.disable)
+
+    def test_root_returns_frontend_index(self):
+        for url in ("/", "/?racun=povratak"):
+            response = self.client.get(url)
+            self.addCleanup(response.close)  # inače Windows ne da obrisati privremenu mapu
+            self.assertEqual(response.status_code, 200, url)
+            self.assertIn(b'<div id="root">', b"".join(response.streaming_content))
+
+    def test_frontend_assets_are_served(self):
+        response = self.client.get("/assets/index-abc123.js")
+        self.addCleanup(response.close)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("javascript", response["Content-Type"])
+
+    def test_backend_routes_are_not_shadowed(self):
+        self.assertEqual(self.client.get("/api/v1/auth/csrf").status_code, 204)
+        self.assertEqual(self.client.get(SESSION_URL).status_code, 401)
+        response = self.client.get("/admin/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
 
 
 class SignupTests(TestCase):
