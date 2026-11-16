@@ -20,7 +20,8 @@ class User(AbstractUser):
 class Phenomenon(models.TextChoices):
     HAIL = "hail", "Tuča"
     STORM_WIND = "storm_wind", "Olujni vjetar"
-    HEAVY_RAIN_FLOOD = "heavy_rain_flood", "Jaka kiša i poplava"
+    HEAVY_RAIN = "heavy_rain", "Jaka kiša"
+    FLOOD = "flood", "Poplava"
     SNOW = "snow", "Snijeg"
     GLAZE_ICE = "glaze_ice", "Poledica"
     WATERSPOUT = "waterspout", "Pijavica"

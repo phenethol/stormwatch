@@ -23,7 +23,8 @@ const stateColors: Record<ReportState, string> = {
 const phenomenonLabels: Record<Phenomenon, string> = {
   hail: "Tuča",
   storm_wind: "Olujni vjetar",
-  heavy_rain_flood: "Jaka kiša i poplava",
+  heavy_rain: "Jaka kiša",
+  flood: "Poplava",
   snow: "Snijeg",
   glaze_ice: "Poledica",
   waterspout: "Pijavica"

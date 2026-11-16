@@ -1972,9 +1972,9 @@ components:
     # ---------- enumeracije
     Phenomenon:
       type: string
-      enum: [hail, storm_wind, heavy_rain_flood, snow, glaze_ice, waterspout]
+      enum: [hail, storm_wind, heavy_rain, flood, snow, glaze_ice, waterspout]
       description: |
-        Vrsta pojave (PR-01): `hail` tuča, `storm_wind` olujni vjetar, `heavy_rain_flood` jaka kiša i poplava,
+        Vrsta pojave (PR-01): `hail` tuča, `storm_wind` olujni vjetar, `heavy_rain` jaka kiša, `flood` poplava,
         `snow` snijeg, `glaze_ice` poledica, `waterspout` pijavica.
     Intensity:
       type: string
