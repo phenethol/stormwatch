@@ -2,7 +2,7 @@
 
 Početna konfiguracija frontenda projekta **StormWatch**.
 
-**Tehnologije:** React · TypeScript · Vite · ESLint
+**Tehnologije:** React · TypeScript · Vite · ESLint · Tailwind CSS
 
 ## Pokretanje projekta
 
@@ -27,6 +27,25 @@ Razvojni server pokreće se na adresi koju ispiše Vite, najčešće **http://lo
 | `npm run build` | TypeScript provjera i izgradnja aplikacije |
 | `npm run lint` | Provjera koda pomoću ESLinta |
 | `npm run preview` | Lokalni pregled izgrađene aplikacije |
+
+## Stilovi i zajedničke komponente
+
+- **Tailwind CSS 4** uključen je preko dodatka `@tailwindcss/vite` u `vite.config.ts`, a `src/styles.css` ga uvozi s `@import "tailwindcss"`.
+- **`src/styles.css`** sadrži samo zajedničke stilove: boje kao CSS varijable (npr. `--ink`, `--blue`, `--line`) za svijetlu temu i za tamnu temu (`[data-theme="dark"]`), tipografiju, gumbe (`.primary`, `.secondary`, `.text-button`), obavijesti (`.inline-note`), zaglavlje stranice i paginaciju. Stilovi karte, prijava i autentikacije idu u zasebne CSS datoteke.
+- **Fontovi** se uvoze u `src/main.tsx` preko Fontsourcea, pa se isporučuju s aplikacijom: Instrument Sans za tekst i IBM Plex Mono za brojeve i oznake (varijabla `--mono`).
+- **Ikone** dolaze iz biblioteke `lucide-react`, npr. `import { MapPin } from 'lucide-react'`.
+
+Zajedničke komponente nalaze se u `src/components/ui.tsx`:
+
+| Komponenta | Namjena |
+|---|---|
+| `Page` | Okvir zasebne stranice: naslov (`title`), neobavezni podnaslov (`subtitle`) i sadržaj |
+| `Pager` | Gumbi „Prethodne” i „Sljedeće” s rasponom prikazanih zapisa. `page` počinje od 0, zadana veličina stranice je 20, a komponenta se ne prikazuje ako svi zapisi stanu na jednu stranicu. |
+| `Status` | Poruke učitavanja, greške (s gumbom „Pokušaj ponovno”) i praznog popisa za resurs oblika `{ updated?, error?, refresh }`. Kod greške prethodno učitani podaci ostaju vidljivi. |
+
+```tsx
+import { Page, Pager, Status } from '../components/ui'
+```
 
 ## Napomene
 
