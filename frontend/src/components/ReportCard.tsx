@@ -1,61 +1,44 @@
-
-import type { Report, ReportState, Phenomenon } from "../types/report";
+import { CircleCheck } from "lucide-react";
+import { phenomenonLabels, stateLabels, type ReportDetail } from "../types/report";
+import { coordinates, formatClock, formatDate } from "../utils/format";
+import { intensityLabel } from "../utils/reports";
+import { WeatherIcon } from "./icons";
 
 type ReportCardProps = {
-  report: Report;
+  report: ReportDetail;
+  active?: boolean;
+  onClick: () => void;
 };
 
-const stateLabels: Record<ReportState, string> = {
-  submitted: "Predana",
-  pending: "Na čekanju",
-  confirmed: "Potvrđena",
-  rejected: "Odbijena"
-};
-
-const stateColors: Record<ReportState, string> = {
-  submitted: "gray",
-  pending: "orange",
-  confirmed: "green",
-  rejected: "red"
-};
-
-
-const phenomenonLabels: Record<Phenomenon, string> = {
-  hail: "Tuča",
-  storm_wind: "Olujni vjetar",
-  heavy_rain: "Jaka kiša",
-  flood: "Poplava",
-  snow: "Snijeg",
-  glaze_ice: "Poledica",
-  waterspout: "Pijavica"
-};
-
-
-function ReportCard({ report }: ReportCardProps) {
+function ReportCard({ report, active, onClick }: ReportCardProps) {
   return (
-    <div>
-      <h2>{phenomenonLabels[report.phenomenon]}</h2>
-
-      <p>
-        Datum predaje:{" "}
-        {new Date(report.submitted_at).toLocaleString("hr-HR", {
-          timeZone: "Europe/Zagreb"
-        })}
-      </p>
-
-      <p>
-        Stanje:{" "}
-        <strong style={{ color: stateColors[report.state] }}>
-          {stateLabels[report.state]}
-        </strong>
-      </p>
+    <>
+      <button className="report-card" type="button" aria-pressed={active} onClick={onClick}>
+        <span className="report-symbol">
+          <WeatherIcon type={report.phenomenon} />
+        </span>
+        <span className="report-copy">
+          <strong>{phenomenonLabels[report.phenomenon]}</strong>
+          <span>{report.place_name ?? coordinates(report.location)}</span>
+          <span className="report-foot">
+            <span className={`report-status ${report.state}`}>
+              {report.state === "confirmed" && <CircleCheck size={12} aria-hidden />}
+              {stateLabels[report.state]}
+            </span>
+            <span>{intensityLabel(report.intensity)}</span>
+          </span>
+        </span>
+        <time dateTime={report.observed_at} title={formatDate(report.observed_at)}>
+          {formatClock(report.observed_at)}
+        </time>
+      </button>
 
       {report.state === "rejected" && report.rejection_reason && (
-        <p>Razlog odbijanja: {report.rejection_reason}</p>
+        <p className="rejection">
+          <strong>Obrazloženje odbijanja:</strong> {report.rejection_reason}
+        </p>
       )}
-
-      <hr />
-    </div>
+    </>
   );
 }
 
