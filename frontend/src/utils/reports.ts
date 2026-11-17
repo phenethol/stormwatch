@@ -1,3 +1,4 @@
+
 import type { Point } from '../types/map'
 import { intensityNames, type Damage, type Filter, type Intensity, type Phenomenon, type Report, type Strength } from '../types/report'
 
@@ -8,7 +9,12 @@ export const strength = (intensity: Intensity): Strength =>
 export const intensityLabel = (intensity: Intensity) => intensityNames[strength(intensity)]
 const hailSizes: Record<Strength, Intensity> = { weak: 'pea', moderate: 'hazelnut', strong: 'walnut' }
 /** Backend code for the strength chosen in the form: hail is stored by grain size. */
-export const apiIntensity = (type: Phenomenon, value: Strength): Intensity => type === 'hail' ? hailSizes[value] : value
+export const apiIntensity = (type: Phenomenon, value: Intensity): Intensity => {
+  if (type === 'hail' && (value === 'weak' || value === 'moderate' || value === 'strong')) {
+    return hailSizes[value]
+  }
+  return value
+}
 export const publicReport = (report: Report, signedIn: boolean) => report.state === 'confirmed' || (signedIn && report.state === 'pending')
 /** Name of the person who submitted a report, when the backend returns it. */
 export const reporterName = (report: Pick<Report, 'author'>) =>
@@ -24,14 +30,14 @@ export function filteredReports(reports: Report[], filters: Filter, now: number)
 
 /** What the new-report form holds while it is being filled in. */
 export type Draft = {
-  phenomenon: Phenomenon | ''; intensity: Strength | ''; damage: Damage; observed: string
-  lat: string; lon: string; source: 'map' | 'gps'; description: string
+  phenomenon: Phenomenon | ''; intensity: Intensity | ''; damage: Damage; observed: string
+  lat: string; lon: string; source: 'map' | 'gps'; description: string; photos: File[]
 }
 
 export function emptyDraft(): Draft {
   const now = new Date()
   const observed = new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-  return { phenomenon: '', intensity: '', damage: 'none', observed, lat: '', lon: '', source: 'map', description: '' }
+  return { phenomenon: '', intensity: '', damage: 'none', observed, lat: '', lon: '', source: 'map', description: '', photos: [] }
 }
 
 export function assignLocation(draft: Draft, point: Point, source: Draft['source']): Draft {
