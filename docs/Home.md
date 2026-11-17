@@ -41,6 +41,8 @@ Ažurirani popis članova, njihovih GitHub profila i glavnih uloga ili doprinosa
 
 ## Ključne točke projekta
 
+**Javno dostupna aplikacija:** <https://stormwatch-4013.onrender.com/>
+
 | Kontrolna točka | Demonstracija | Video |
 | --- | --- | --- |
 | Iteracija 1 | [Poveznica na demonstraciju ili inačicu projekta] | [Poveznica na video Demo 1, ako je snimljen] |
