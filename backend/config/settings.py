@@ -133,6 +133,8 @@ DHMZ_MEASUREMENTS_URL = os.environ.get("DHMZ_MEASUREMENTS_URL", "https://vrijeme
 # P-10: zadano 30 min, nikad kraće od 10 min (uvjeti korištenja DHMZ-a)
 DHMZ_FETCH_INTERVAL_MIN = max(10, int(os.environ.get("DHMZ_FETCH_INTERVAL_MIN", "30")))
 # --- Sigurnost u produkciji (NF-12) ---
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True

@@ -48,6 +48,12 @@ class CsrfTests(TestCase):
         self.assertIn("csrftoken", response.cookies)
 
 
+class ReferrerPolicyTests(TestCase):
+    def test_cross_origin_requests_send_the_origin(self):
+        response = self.client.get("/api/v1/auth/csrf")
+        self.assertEqual(response["Referrer-Policy"], "strict-origin-when-cross-origin")
+
+
 class FrontendServingTests(TestCase):
     """Na Renderu Django (WhiteNoise) poslužuje izgrađeni frontend, a rute backenda ostaju Djangove."""
 
