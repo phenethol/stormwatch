@@ -44,12 +44,8 @@ info:
 servers:
   - url: http://localhost:8000
     description: Lokalni razvoj (Docker Compose)
-  - url: https://{host}
-    description: Render web servis
-    variables:
-      host:
-        default: stormwatch-api.onrender.com
-        description: Primjer; stvarna adresa određuje se pri postavljanju na Render.
+  - url: https://stormwatch-4013.onrender.com
+    description: Produkcija (Render web servis)
 
 tags:
   - name: Autentikacija
