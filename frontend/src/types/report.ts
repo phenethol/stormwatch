@@ -21,3 +21,11 @@ export type Report = {
   submitted_at: string;
   rejection_reason: string | null;
 };
+
+export type ReportPhoto = {
+  id: number;
+  url: string;
+  thumbnail_url: string;
+  width: number | null;
+  height: number | null;
+};
