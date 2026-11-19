@@ -3,7 +3,7 @@
 '
 ' Svrha:    Administracija i podaci DHMZ-a: upravljanje korisnicima, ulogama i
 '           sadržajem te periodičko preuzimanje službenih podataka.
-' Autor:    Tim G08 (StormWatch)
+' Autor:    Tim G08.3 (StormWatch)
 ' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
 '           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
 ' Zahtjevi: F-026 – F-030; UC-020 – UC-023

@@ -150,7 +150,7 @@ MVP čine svi zahtjevi visokog prioriteta. Oni zatvaraju osnovni krug vrijednost
 | A-09 Kartografska usluga   | Sekundarni akter (vanjski sustav); pločice karte u pregledniku.                                                                                       | F-005, NF-08                |
 | A-10 Poslužitelj e-pošte   | Sekundarni akter (vanjski sustav); slanje obavijesti e-poštom.                                                                                        | F-020                       |
 | A-11 Google                | Sekundarni akter (vanjski sustav); pružatelj identiteta za registraciju i prijavu (OpenID Connect na OAuth 2.0), daje ime i adresu e-pošte korisnika. | F-001, F-002, NF-04         |
-| D-01 Razvojni tim G08      | Dionik, nije akter aplikacije (osim kao administrator u demonstraciji).                                                                               | NF-11, NF-12                |
+| D-01 Razvojni tim G08.3      | Dionik, nije akter aplikacije (osim kao administrator u demonstraciji).                                                                               | NF-11, NF-12                |
 
 ---
 

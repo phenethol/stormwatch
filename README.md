@@ -2,7 +2,7 @@
 
 StormWatch je web aplikacija prilagođena mobitelima koja na jednoj karti prikazuje službena mjerenja DHMZ-a i prijave nevremena koje šalju korisnici.
 
-**Projekt na kolegiju:** Ovu je aplikaciju razvio studentski tim G08 StormBusters u sklopu kolegija [Programsko inženjerstvo](https://www.fer.unizg.hr/predmet/proinz) na Fakultetu elektrotehnike i računarstva Sveučilišta u Zagrebu (FER).
+**Projekt na kolegiju:** Ovu je aplikaciju razvio studentski tim G08.3 StormBusters u sklopu kolegija [Programsko inženjerstvo](https://www.fer.unizg.hr/predmet/proinz) na Fakultetu elektrotehnike i računarstva Sveučilišta u Zagrebu (FER).
 
 ## Opis aplikacije
 

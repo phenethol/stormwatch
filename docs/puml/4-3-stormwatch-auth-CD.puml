@@ -5,7 +5,7 @@
 '           Google računom (F-001, F-002, UC-003) te dodjela administratorskih
 '           ovlasti (F-027). Prikazuje vlastite razrede projekta i razrede
 '           biblioteke django-allauth na koje se oslanjaju.
-' Autor:    Tim G08 (StormWatch)
+' Autor:    Tim G08.3 (StormWatch)
 ' AI:       Dijagram je izrađen uz pomoć alata Claude Opus 5.5.
 ' Kod:      frontend/src/services/authApi.ts, frontend/src/services/http.ts,
 '           frontend/src/components/AccountDialog.tsx, backend/config/api.py,
