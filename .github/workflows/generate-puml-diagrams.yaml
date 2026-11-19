@@ -12,7 +12,8 @@
 ##          into SVG vector assets whenever PUML files are modified or when manually dispatched.
 ##          Build dependencies (Graphviz, PlantUML JAR) are restored from cache (since v2).
 ##          Diagrams are validated with strict error checking, the source folder structure is
-##          mirrored in the output, and updated SVGs are committed back to the main branch.
+##          mirrored in the output, and updated SVGs are committed back to the pull request
+##          branch (main is protected and only accepts changes through pull requests).
 
 name: Generate PlantUML diagrams
 
@@ -20,11 +21,10 @@ name: Generate PlantUML diagrams
 # Triggers
 # ==============================================================================
 ## @section triggers Triggers
-## Workflow runs on direct pushes targeting diagram sources or via manual dispatch.
+## Workflow runs on pull requests that touch diagram sources or via manual dispatch
+## on a non-main branch. The regenerated SVGs then reach main through the merge.
 on:
-  push:
-    branches:
-      - main
+  pull_request:
     paths:
       - "docs/puml/**/*.puml"
       - ".github/workflows/generate-puml-diagrams.yaml"
@@ -41,7 +41,7 @@ permissions:
 ## @section concurrency Concurrency
 ## Ensures sequential execution per branch ref to avoid git push collisions.
 concurrency:
-  group: plantuml-${{ github.ref }}
+  group: plantuml-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: false
 
 # ==============================================================================
@@ -54,19 +54,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
-    # Publish only from main, even when started manually via workflow_dispatch.
-    if: github.ref == 'refs/heads/main'
+    # main is protected (changes only through pull requests), so never push there.
+    # Pull requests from forks cannot be pushed to with GITHUB_TOKEN, so skip them.
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
 
     env:
+      TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
       PLANTUML_VERSION: "1.2025.4"
       # Optional integrity check: paste the SHA-256 of plantuml-<version>.jar here.
       # When empty, the checksum verification is skipped.
       PLANTUML_SHA256: ""
 
     steps:
-      # Step 1: Check out the repository source tree
+      # Step 1: Check out the branch itself (not the PR merge commit) so we can push to it
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
 
       # Step 2: Pin the Java runtime so builds do not change with runner image updates
       - name: Set up Java
@@ -139,6 +146,6 @@ jobs:
             echo "No diagram changes detected. Skipping commit."
           else
             git commit -m "docs: regenerate PlantUML diagrams"
-            git pull --rebase
-            git push
+            git pull --rebase origin "$TARGET_BRANCH"
+            git push origin "HEAD:$TARGET_BRANCH"
           fi
