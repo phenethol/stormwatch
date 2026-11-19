@@ -1,0 +1,159 @@
+' ==============================================================================
+' 4-2-stormwatch-data-ERD.puml
+'
+' Svrha:    Logički podatkovni model prve inačice: korisnici i njihovi Google
+'           računi, prijave s fotografijama te mjerne postaje i mjerenja DHMZ-a.
+'           Nazivi stupaca odgovaraju Django modelima.
+' Autor:    Tim G08 (StormWatch)
+' AI:       Dijagram je izrađen uz pomoć alata Claude Opus 5.5.
+' Kod:      backend/core/models.py, backend/dhmz/models.py,
+'           allauth.socialaccount.models.SocialAccount
+'
+' Diagram level: Design
+' Diagram type:  Entity-Relationship Diagram
+' Version:       1.0
+' ==============================================================================
+
+@startuml
+!pragma layout smetana
+title Sustav StormWatch – logički podatkovni model (prva inačica)
+left to right direction
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #212529
+
+skinparam entity {
+    BackgroundColor #E7F1FF
+    BorderColor #0D6EFD
+    FontColor #212529
+}
+
+' ==============================================================================
+' Korisnik i prijava u sustav
+' ==============================================================================
+
+entity "Korisnik\n(core_user)" as User {
+    * id : integer <<PK>>
+    --
+    * username : text <<unique>>
+    * email : text
+    privacy_accepted_at : datetime
+    * is_active : boolean
+    * is_staff : boolean
+    * is_superuser : boolean
+    * is_trusted_observer : boolean
+    * is_moderator : boolean
+    * is_meteorologist : boolean
+    posting_banned_until : datetime
+    * reputation : integer
+    * is_deleted : boolean
+    bio : text
+    photo : image
+}
+
+entity "Google račun\n(socialaccount_socialaccount)" as SocialAccount {
+    * id : integer <<PK>>
+    --
+    * user_id : integer <<FK>>
+    * provider : text
+    * uid : text
+    extra_data : json
+    * date_joined : datetime
+    * last_login : datetime
+    ..
+    (provider, uid) <<unique>>
+}
+
+' ==============================================================================
+' Prijave nevremena
+' ==============================================================================
+
+entity "Prijava\n(core_report)" as Report {
+    * id : integer <<PK>>
+    --
+    * author_id : integer <<FK>>
+    nearest_measurement_id : integer <<FK>>
+    * phenomenon : enum
+    * intensity : enum
+    * damage : enum
+    * lat : decimal
+    * lon : decimal
+    * location_source : enum
+    * observed_at : datetime
+    * submitted_at : datetime
+    description : text
+    * state : enum
+    rejection_reason : text
+    * is_trusted_observer_report : boolean
+    * is_valuable : boolean
+    nearest_distance_km : float
+    * updated_at : datetime
+}
+
+entity "Fotografija prijave\n(core_reportphoto)" as Photo {
+    * id : integer <<PK>>
+    --
+    * report_id : integer <<FK>>
+    * image : file
+    width : integer
+    height : integer
+}
+
+' ==============================================================================
+' Podaci DHMZ-a
+' ==============================================================================
+
+entity "Mjerna postaja\n(dhmz_station)" as Station {
+    * id : integer <<PK>>
+    --
+    * name : text <<unique>>
+    * lat : decimal
+    * lon : decimal
+    altitude_m : integer
+    * automatic : boolean
+    latest_measurement_id : integer <<FK>>
+}
+
+entity "Mjerenje\n(dhmz_measurement)" as Measurement {
+    * id : integer <<PK>>
+    --
+    * station_id : integer <<FK>>
+    * measured_at : datetime
+    temperature_c : float
+    humidity_pct : float
+    pressure_hpa : float
+    wind_speed_ms : float
+    wind_direction : text
+    ..
+    (station_id, measured_at) <<unique>>
+}
+
+entity "Stanje preuzimanja\n(dhmz_fetchstatus)" as FetchStatus {
+    * id : integer <<PK>>
+    --
+    * source : enum <<unique>>
+    last_attempt_at : datetime
+    last_success_at : datetime
+    last_status : enum
+    last_error : text
+}
+
+' ==============================================================================
+' Veze
+' ==============================================================================
+
+User ||--o{ SocialAccount : "prijavljuje se"
+User ||--o{ Report : "autor"
+Report ||--|{ Photo : "1 – 5 fotografija"
+Station ||--o{ Measurement : "mjeri"
+Measurement |o--o{ Report : "najbliže mjerenje"
+Station |o--o| Measurement : "posljednje mjerenje"
+
+note bottom of FetchStatus
+  Jedan redak po izvoru (mjerenja, prognoze,
+  upozorenja). Nije povezan s drugim
+  entitetima; bilježi ishod preuzimanja.
+end note
+
+@enduml

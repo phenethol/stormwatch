@@ -1,7 +1,5 @@
 # 4. Arhitektura i oblikovanje
 
-**Cilj:** Definirati arhitekturni stil, dekompoziciju programa na podsustave i module, organizaciju podataka te dinamičko ponašanje tijekom izvođenja. Arhitektura predstavlja temelj za implementaciju i ažurira se pri svakoj važnijoj promjeni projektnih odluka.
-
 | Arhitekturni pogled | Ključno inženjersko pitanje | Primijenjeni model ili dijagram |
 | :--- | :--- | :--- |
 | **Strategija rješenja** | Koji stil i temeljne odluke određuju program? | Tablica odluka (odjeljak 4.1) |
@@ -14,14 +12,12 @@
 
 ---
 
-Za svaki UML dijagram čuvajte čitljivu sliku i PlantUML izvor, kako je opisano na stranici [Home](./Home.md). U dovršenoj stranici koristite vlastite projektne odluke i modele.
-
 ## 4.1 Ključne arhitekturne odluke
-
-**Cilj:** Objasniti nekoliko arhitekturnih odluka koje najviše utječu na rješenje i navesti njihove projektno specifične razloge.
 
 | Odluka | Razmatrana alternativa | Projektno specifično obrazloženje i kompromis |
 | --- | --- | --- |
+| Jednostranična web aplikacija (React) i jedan poslužiteljski REST API (Django i Django Ninja) nad relacijskom bazom PostgreSQL | Zasebne poslužiteljske usluge, npr. za prijave i za podatke DHMZ-a; dokumentno orijentirana baza | Prijave, korisnici, postaje i mjerenja međusobno su povezani (autor prijave, mjerenje najbliže postaje), pa ih relacijska shema s ograničenjima čuva dosljednima, a Django migracije prate promjene sheme. Jedan Django projekt podijeljen je na aplikacije `core` (korisnici i prijave) i `dhmz` (postaje i mjerenja) koje se postavljaju zajedno; za opseg jednog semestra to je jednostavnije od više usluga. Ugovor između frontenda i API-ja zapisan je u `docs/api/openapi.yaml`. Kompromis: kvar poslužitelja zaustavlja cijelu aplikaciju, a dijelovi se ne mogu skalirati odvojeno. |
+| U prvoj inačici prijave potvrđuje i odbija administrator u Django Adminu | Vlastito moderatorsko sučelje u Reactu (UC-016) | Django Admin daje gotove popise, filtre i obrasce za `Report` i `User`, pa je prva inačica mogla zatvoriti tijek prijave bez novog sučelja. Kompromis: moderator po regijama (PR-06, PR-07) još ne postoji, a promjenu stanja može napraviti samo korisnik s administratorskim ovlastima. |
 | Prijava Google računom preko biblioteke django-allauth u načinu bez vlastitih stranica (headless), uz sesijski kolačić | Vlastiti pristupni token (npr. JWT) koji poslužitelj izdaje nakon provjere Googleova ID tokena, kako su to prvotno opisivali F-002 i UC-003 | django-allauth provodi tok OAuth 2.0 i OpenID Connect s Googleom, provjerava ID token i vodi registraciju, pa tim ne piše ni ne održava vlastito izdavanje i opoziv tokena. Prijavljeni korisnik dobiva sesijski kolačić `sessionid`, a zahtjevi koji mijenjaju podatke štite se od CSRF-a. Kompromis: frontend i backend moraju dijeliti podrijetlo (lokalno preko Vite proxyja, na Renderu tako što Django poslužuje frontend). F-002, C-02 i UC-003 usklađeni su s ovom odlukom. |
 | Administratori se određuju popisom Google adresa u varijabli `ADMIN_EMAILS` | Ručna dodjela ovlasti u bazi ili `createsuperuser` s lozinkom | Sustav ne pohranjuje lozinke (C-02, NF-04), pa se administrator ne može prijaviti obrascem s lozinkom. Korisnik čija je adresa na popisu pri prijavi Google računom dobiva ovlasti administratora, a `/admin/login/` preusmjerava na prijavu u frontendu. Kompromis: novi administrator traži promjenu varijable okruženja i ponovno pokretanje poslužitelja. |
 | Podaci DHMZ-a preuzimaju se pri zahtjevu za postajama (lijeno preuzimanje) | Zaseban raspoređivač (cron posao na Renderu ili Celery beat) | Besplatni smještaj na Renderu nema raspoređivač, a zaseban proces povećao bi trošak i složenost postavljanja. Prvi zahtjev za `/api/v1/stations` nakon isteka intervala P-10 pokreće preuzimanje, a uvjetni UPDATE nad tablicom `FetchStatus` osigurava da ga pokrene samo jedan zahtjev. Kompromis: dok nitko ne otvara kartu, podaci se ne osvježavaju, a zahtjev koji pokrene preuzimanje čeka njegov završetak. |
@@ -29,22 +25,6 @@ Za svaki UML dijagram čuvajte čitljivu sliku i PlantUML izvor, kako je opisano
 | Mjerenje najbliže postaje određuje se i sprema pri predaji prijave | Tražiti najbližu postaju pri svakom prikazu prijave | PR-08 traži da se odabrano mjerenje naknadno ne mijenja, pa prijava čuva strani ključ na `Measurement` i udaljenost. Udaljenost se računa po velikoj kružnici u Pythonu, nad postajama unutar pravokutnika oko točke prijave, pa PostGIS nije potreban. Kompromis: predaja ne pokreće preuzimanje DHMZ-a, pa prijava ostaje bez mjerenja ako baza nema mjerenje unutar ±60 min. |
 | Greške API-ja uz tekst poruke imaju i strojno čitljiv `code` | Samo tekst poruke u polju `detail` | Poruke su na hrvatskom i mogu se mijenjati, a frontend mora pouzdano prepoznati razlog, npr. zabranu objavljivanja (`posting_banned`) ili preveliku fotografiju (`photo_too_large`). Greške validacije ostaju u formatu Django Ninje po poljima, kako propisuje `docs/api/openapi.yaml`. |
 | Django u istoj Render web-usluzi poslužuje izgrađeni React frontend (WhiteNoise) | Zasebno statičko web-mjesto na Renderu za frontend i zasebna web-usluga za backend | Prijava sesijskim kolačićem traži da frontend i backend dijele podrijetlo. Na istoj domeni nisu potrebni CORS, `SameSite=None` ni `VITE_API_BASE_URL`, a frontend zove API relativnim putanjama. `backend/build.sh` gradi frontend, a WhiteNoise, koji već poslužuje statičke datoteke Django Admina, poslužuje `frontend/dist` s korijena domene i na `/` vraća `index.html`. Rute `/api/v1/`, `/_allauth/`, `/accounts/` i `/admin/` ostaju Djangove. Kompromis: izgradnja backenda traži Node.js, svaka promjena frontenda ponovno postavlja cijelu uslugu, a frontend i API ne mogu se skalirati odvojeno. |
-
-Objasnite glavne arhitekturne odluke bez ponavljanja popisa tehnologija. Ako važna odluka ima ADR, dovoljno je u tablici navesti njegov ID.
-
-<details>
-<summary><strong>Primjer arhitekturnih odluka i kompromisa</strong></summary>
-
-**Primjer — CrisisMap:**
-
-| Odluka | Razmatrana alternativa | Projektno specifično obrazloženje i kompromis |
-| --- | --- | --- |
-| Klijent u pregledniku i jedan poslužiteljski API | Više zasebno postavljenih poslužiteljskih usluga | Klijent prikazuje kartu, dok poslužiteljski sustav provjerava i pohranjuje prijave. Jedan poslužiteljski sustav upravljiv je za ovaj opseg; njegov kvar može privremeno prekinuti rad s prijavama. Obrazloženje je u ADR-01. |
-| Relacijska pohrana prijava | Dokumentno orijentirana pohrana | Prijave imaju prepoznatljive veze s korisnicima i lokacijama. Relacijska shema te veze čini eksplicitnima, ali zahtijeva migracije kada se shema promijeni. |
-
-**Analiza primjera:** Obje odluke navode razlog vezan uz aplikaciju za prijavljivanje kriznih događaja i priznaju kompromis. Odluka o poslužiteljskom sustavu upućuje na ADR-01 umjesto ponavljanja cijele usporedbe. Moduli unutar jedne aplikacije koja se postavlja kao cjelina nisu zasebne mikrousluge. U vlastitoj tablici navedite alternative koje je tim doista razmatrao.
-
-</details>
 
 ## 4.2 Gradivni blokovi i UML dijagram komponenata
 
@@ -83,53 +63,39 @@ Započnite crtanjem granice oko predloženog sustava. Unutar nje prepoznajte dij
 
 ## 4.3 Model podataka i oblikovanje razreda
 
-**Cilj:** Objasniti važne informacije koje aplikacija pohranjuje i jedno reprezentativno područje oblikovanja na razini razreda. Model podataka i UML dijagram razreda odgovaraju na različita pitanja; jedno ne zamjenjuje drugo.
-
 ### 4.3.1 ER dijagram i model podataka
 
-**Cilj:** Prikazati važne pohranjene entitete, njihove identifikatore i veze te dovoljno atributa za razumijevanje podataka aplikacije. ER dijagram odvojen je od reprezentativnog UML dijagrama razreda u nastavku.
+![ER dijagram podataka sustava StormWatch](./assets/diagrams/4-2-stormwatch-data-ERD.svg)
 
-**ER dijagram:** [Ugradite čitljiv dijagram projekta.]  
-**Izvor dijagrama:** [Poveznica na njegov izvor.]  
-**Implementacija:** [Navedite gdje je odgovarajući model podataka definiran u projektu.]
+**Slika 4.2. Logički podatkovni model prve inačice**
 
-<details>
-<summary><strong>Jedna prijava poplave i povezani podaci</strong></summary>
+**PlantUML izvor:** [izvor](./puml/4-2-stormwatch-data-ERD.puml)  
+**Implementacija:** [`backend/core/models.py`](../backend/core/models.py) (korisnik, prijava, fotografija) i [`backend/dhmz/models.py`](../backend/dhmz/models.py) (postaja, mjerenje, stanje preuzimanja). Tablicu `socialaccount_socialaccount` održava biblioteka django-allauth. Shemu stvaraju Django migracije u `backend/core/migrations/` i `backend/dhmz/migrations/`.
 
-**Primjer — CrisisMap:** Ana putem svojeg korisničkog računa podnosi prijavu poplave `R-104`. Odabire lokaciju na karti i označava razinu ozbiljnosti kao visoku. Građanin može podnijeti više prijava; svaka prijava pripada jednoj kategoriji kriznog događaja, primjerice *Poplava*. Aplikacija pohranjuje prijavu i njezine koordinate. Kartografske pločice dolaze od vanjskog pružatelja i nisu entiteti u modelu podataka aplikacije.
+Atributi označeni zvjezdicom obavezni su. Nazivi tablica i stupaca odgovaraju bazi podataka.
 
-![ER dijagram podataka sustava CrisisMap](./assets/diagrams/4-2-crisismap-data-ERD.svg)
+- **Korisnik i Google račun.** Korisnik se registrira i prijavljuje isključivo Google računom, pa django-allauth uz zapis u `core_user` sprema vezu s Google računom (`provider` je `google`, a `uid` Googleov identifikator korisnika; par je jedinstven). `privacy_accepted_at` bilježi kada je korisnik pri prvoj prijavi potvrdio obavijest o privatnosti. Oznake `is_trusted_observer`, `is_moderator` i `is_meteorologist` određuju uloge, a `is_staff` i `is_superuser` administratora.
+- **Prijava i fotografije.** Prijava ima jednog autora i jednu do pet fotografija; broj fotografija provjerava API pri predaji. Vrsta pojave, intenzitet, šteta, izvor lokacije i stanje fiksne su vrijednosti u kodu (Django `TextChoices`), a ne zasebne tablice. Dva ograničenja u bazi čuvaju pravila prijave: vrijeme opažanja najviše je 24 h prije i 5 min nakon predaje, a intenzitet odgovara pojavi (veličina zrna samo za tuču).
+- **Mjerenje uz prijavu.** Pri predaji prijava dobiva strani ključ na mjerenje najbliže postaje i udaljenost do nje (PR-08). Ako takvog mjerenja nema, ključ ostaje prazan.
+- **Podaci DHMZ-a.** Postaja se prepoznaje po nazivu jer DHMZ ne objavljuje šifru postaje. `latest_measurement_id` pokazuje na posljednje mjerenje, da popis postaja ne traži najnovije mjerenje za svaku postaju posebno. Par (postaja, termin mjerenja) jedinstven je, pa ponovno preuzimanje istog termina ne stvara duplikat. `dhmz_fetchstatus` ima po jedan redak za svaki izvor i služi za interval preuzimanja P-10 i `GET /api/v1/data-status`.
 
-**Slika 4.2. ER dijagram podataka sustava CrisisMap**
-
-**PlantUML izvor:** [izvor](./puml/4-2-crisismap-data-ERD.puml)
-
-**Analiza primjera:** `R-104` ima jednog autora i jednu kategoriju; Ana i kategorija *Poplava* mogu biti povezane s više prijava. Dijagram prikazuje veze bez prepisivanja svih stupaca baze podataka ili pisanja drugog tabličnog opisa za svaki entitet. Ako aplikacija prihvaća i **anonimne** prijave, tu mogućnost prikažite u vezi s entitetom `Citizen`. Ako su kategorije fiksne vrijednosti, a ne pohranjeni zapisi, nemojte izmišljati tablicu kategorija. Završni ER dijagram usporedite s modelom trajne pohrane i objasnite samo razlike važne za razumijevanje projekta.
-
-</details>
+Dijagram ne prikazuje Djangove tablice za sesije i dozvole, allauthove adrese e-pošte ni stupce `password`, `first_name`, `last_name` i `last_login` naslijeđene iz Djangova korisnika, jer ih aplikacija ne koristi za vlastitu logiku.
 
 ### 4.3.2 Reprezentativni UML dijagram razreda
 
-**Cilj:** Prije implementacije reprezentativnog dijela sustava modelirati i prikazati razrede ili sučelja potrebna za dodjelu odgovornosti, operacija i veza. Oblikovanje ažurirajte kada se te odluke promijene.
+Prikazana je generička funkcionalnost prve inačice: registracija i prijava Google računom (F-001, F-002, UC-003) te dodjela administratorskih ovlasti (F-027). Tim nije pisao vlastiti tok OAuth 2.0, nego je oko biblioteke django-allauth oblikovao nekoliko vlastitih razreda ([4.1](#41-ključne-arhitekturne-odluke)). Razredi biblioteke prikazani su sivo, sa stereotipom «library».
 
-**Dijagram razreda:** [Ugradite čitljiv UML dijagram razreda za reprezentativni dio oblikovanja.]  
-**PlantUML izvor:** [Poveznica na odgovarajuću `.puml` datoteku.]  
-**Referenca na kod pri završnom pregledu:** [Poveznica na odgovarajuću implementaciju.]
+![Dijagram razreda registracije i prijave Google računom](./assets/diagrams/4-3-stormwatch-auth-CD.svg)
 
-<details>
-<summary><strong>Oblikovanje odgovornosti prijave i dopuštenih promjena</strong></summary>
+**Slika 4.3. Razredi registracije i prijave Google računom**
 
-**Primjer — CrisisMap:** Prijava sadrži pravila za promjenu vlastitog statusa. Razred tijeka rada koordinira podnošenje i pregled, dok sučelje repozitorija opisuje potrebne operacije trajne pohrane. Dijagram predlaže te odgovornosti prije implementacije.
+**PlantUML izvor:** [izvor](./puml/4-3-stormwatch-auth-CD.puml)  
+**Referenca na kod:** frontend [`services/authApi.ts`](../frontend/src/services/authApi.ts), [`services/http.ts`](../frontend/src/services/http.ts) i [`components/AccountDialog.tsx`](../frontend/src/components/AccountDialog.tsx); backend [`core/models.py`](../backend/core/models.py) (`User`), [`core/forms.py`](../backend/core/forms.py), [`core/validators.py`](../backend/core/validators.py), [`core/signals.py`](../backend/core/signals.py), [`config/api.py`](../backend/config/api.py) (`get_csrf`) i postavke django-allautha u [`config/settings.py`](../backend/config/settings.py).
 
-![Dijagram razreda za obradu prijava kriznih događaja](./assets/diagrams/4-3-crisismap-domain-CD.svg)
-
-**Slika 4.3. Dijagram razreda za obradu prijava kriznih događaja**
-
-**PlantUML izvor:** [izvor](./puml/4-3-crisismap-domain-CD.puml)
-
-**Analiza primjera:** `DisasterReport` sadrži dopuštena pravila promjene stanja pa tijek rada ne može prešutno odobriti već odbijenu prijavu. `ReportWorkflow` koordinira operaciju bez preuzimanja pravila prijelaza stanja same prijave; `ReportRepository` definira potrebne operacije pohrane. Kompozicija `Location` i odabrani tipovi prikazuju veze korisne za oblikovanje. Dijagram namjerno izostavlja stupce baze podataka i nepovezane razrede: ER model objašnjava pohranjene podatke, dok ovaj dijagram dodjeljuje programske odgovornosti i operacije. Ti su razredi odluka oblikovanja, a ne obavezni slojevi za svaki tim. Završnu implementaciju usporedite s početnim oblikovanjem i ažurirajte dijagram tamo gdje su se odluke promijenile; generiranje dijagrama iz koda tek na kraju ne može zamijeniti ovo početno modeliranje.
-
-</details>
+- **Frontend.** `AccountDialog` prikazuje prijavu, dovršetak registracije ili „Moj račun”, ovisno o stanju `Session` (`guest`, `signup`, `account`) koje vraća `authApi.loadSession`. `authApi` poziva headless rute django-allautha: `googleLogin` šalje obrazac na `provider/redirect`, `signup` šalje korisničko ime i potvrdu privatnosti, a `signOut` briše sesiju. Prije svakog zahtjeva koji mijenja podatke `http.csrf` dohvaća kolačić `csrftoken` s `GET /api/v1/auth/csrf`, a `http.write` ga šalje u zaglavlju `X-CSRFToken`.
+- **Povratak s Googlea.** Google vraća korisnika na `/accounts/google/login/callback/`, gdje `OAuth2CallbackView` i `GoogleOAuth2Adapter` provjeravaju ID token. Automatska registracija je isključena (`SOCIALACCOUNT_AUTO_SIGNUP = False`), pa za novi Google račun sesija ostaje u stanju `signup` dok korisnik ne odabere korisničko ime.
+- **Registracija.** `ProviderSignupView` provjerava korisničko ime pravilom iz `core.validators` (3–30 znakova: slova bez dijakritika, brojke, `_`, `.` i `-`) i poziva `PrivacySignupForm.signup`, koji upisuje `privacy_accepted_at`. Tada nastaju `User` i povezani `SocialAccount`.
+- **Administrator.** `core.signals.grant_admin` prima Djangov signal `user_logged_in`: korisnik čija je adresa u `ADMIN_EMAILS` dobiva `is_staff` i `is_superuser`. `/admin/login/` nema obrazac s lozinkom, nego preusmjerava na prijavu u frontendu ([`config/urls.py`](../backend/config/urls.py)).
 
 ## 4.4 Ponašanje tijekom izvođenja
 
