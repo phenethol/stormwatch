@@ -57,7 +57,7 @@ Korist se dokazuje demonstracijom funkcionalnosti, a ne mjerenjima na stvarnim k
 - **Kartografska usluga** (npr. OpenStreetMap): prikaz karte u pregledniku.
 - **Poslužitelj e-pošte**: slanje obavijesti.
 - **Preglednik uređaja**: Geolocation API za GPS lokaciju i pristup kameri ili datotekama za fotografije.
-- **Google račun (OpenID Connect na OAuth 2.0)**: jedini način registracije i prijave. Korisnik se prijavljuje na Googleovoj stranici, a aplikacija provjerava Googleov ID token i izdaje vlastiti pristupni token; bez Google računa dostupni su samo javni pregledi.
+- **Google račun (OpenID Connect na OAuth 2.0)**: jedini način registracije i prijave. Korisnik se prijavljuje na Googleovoj stranici, a aplikacija provjerava Googleov ID token i korisniku otvara sesiju (sesijski kolačić); bez Google računa dostupni su samo javni pregledi.
 
 ## 1.4 Postojeći pristupi i opravdanost projekta
 
