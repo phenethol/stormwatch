@@ -165,7 +165,7 @@ MVP čine svi zahtjevi visokog prioriteta. Oni zatvaraju osnovni krug vrijednost
 | DR-01 | Pravilo domene | Službena upozorenja izdaje isključivo DHMZ; prijave korisnika nisu službena opažanja i moraju se vizualno razlikovati od podataka DHMZ-a.                                 | Domena primjene (meteorologija, DHMZ)                     | Sustav nema funkciju izdavanja upozorenja; prijave imaju vlastiti sloj, oznaku i boju (NF-09).                                           |
 | DR-02 | Pravilo domene | Razine upozorenja su zelena (nema upozorenja), žuta, narančasta i crvena, prema ljestvici koju koristi DHMZ.                                                              | Domena primjene (meteorologija, DHMZ)                     | Boje sloja upozorenja i pravila obavijesti (F-005, F-018).                                                                               |
 | DR-03 | Pravilo domene | Mjerne jedinice: temperatura u °C, relativna vlažnost u %, tlak u hPa, brzina vjetra u m/s, smjer vjetra u stranama svijeta.                                              | Domena primjene (meteorologija, DHMZ)                     | Jedinice u prikazu mjerenja i izvozu CSV (F-005, F-017).                                                                                 |
-| AS-01 | Pretpostavka   | Mjerenja (s koordinatama postaja), prognoze i upozorenja po regijama DHMZ objavljuje javno u formatu XML, a uvjeti korištenja dopuštaju periodičko preuzimanje i pohranu. | Procjena tima                                             | Istraživanje izvora (Issue I-07) prije implementacije preuzimanja.                                                                       |
+| AS-01 | Pretpostavka   | Mjerenja (s koordinatama postaja), prognoze i upozorenja po regijama DHMZ objavljuje javno u formatu XML, a uvjeti korištenja dopuštaju periodičko preuzimanje i pohranu. | Procjena tima                                             | Istraživanje izvora (Issue I-03) prije implementacije preuzimanja.                                                                       |
 
 ---
 
@@ -183,11 +183,11 @@ Tablica obrazaca uporabe u [odjeljku 3.2](3-Obrasci-uporabe.md#32-specifikacije-
 
 | Područje                          | Funkcijski zahtjevi | Obrasci uporabe | Dijagram  |
 | --------------------------------- | ------------------- | --------------- | --------- |
-| Javni pregledi i korisnički račun | F-001 – F-008       | UC-001 – UC-005 | Slika 3.1 |
-| Prijave i zajednička provjera     | F-009 – F-017       | UC-006 – UC-011 | Slika 3.2 |
-| Obavijesti i praćenje             | F-018 – F-020       | UC-012 – UC-015 | Slika 3.3 |
-| Moderacija i stručni sadržaj      | F-021 – F-025       | UC-016 – UC-019 | Slika 3.4 |
-| Administracija i podaci DHMZ-a    | F-026 – F-030       | UC-020 – UC-023 | Slika 3.5 |
+| Javni pregledi i korisnički račun | F-001 – F-008       | UC-001 – UC-005 | Slika 3.2 |
+| Prijave i zajednička provjera     | F-009 – F-017       | UC-006 – UC-011 | Slika 3.3 |
+| Obavijesti i praćenje             | F-018 – F-020       | UC-012 – UC-015 | Slika 3.4 |
+| Moderacija i stručni sadržaj      | F-021 – F-025       | UC-016 – UC-019 | Slika 3.5 |
+| Administracija i podaci DHMZ-a    | F-026 – F-030       | UC-020 – UC-023 | Slika 3.6 |
 
 Za zahtjeve ostvarene u prvoj inačici tablica u nastavku navodi i dio sustava koji ih ostvaruje. Ispitivanje nije dio prve inačice, pa zadnji stupac navodi kako se zahtjev provjerava u pokrenutoj aplikaciji; ispitni slučajevi dodaju se u [poglavlju 5](5-Ispitivanje.md).
 

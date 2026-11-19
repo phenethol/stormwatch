@@ -59,7 +59,7 @@ rectangle "Sustav StormWatch" {
 
 note left of UC_Send
   Nema izravnog aktera: uključen je u UC-016
-  (Slika 3.4) i UC-023 (Slika 3.5), a pokreću
+  (Slika 3.5) i UC-023 (Slika 3.6), a pokreću
   ga i nova prijava (UC-006) i sankcija (UC-017).
 end note
 
