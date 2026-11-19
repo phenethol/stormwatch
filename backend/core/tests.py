@@ -3,6 +3,7 @@ import shutil
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
+from unittest import mock
 
 import yaml
 from allauth.account.models import EmailAddress
@@ -338,6 +339,29 @@ class CreateReportTests(TestCase):
         response = self.post(photos=[big])
         self.assert_rejected(response, status=413)
         self.assertEqual(response.json(), {"detail": "Fotografija je veća od 10 MB.", "code": "photo_too_large"})
+
+    def test_pixel_bomb_is_rejected_before_decoding(self):
+        # 1-bitni PNG od par desetaka KB koji bi se dekodirao u 10000 x 10000 px (100 MP)
+        buf = io.BytesIO()
+        Image.new("1", (10000, 10000)).save(buf, format="PNG")
+        bomb = SimpleUploadedFile("bomba.png", buf.getvalue(), content_type="image/png")
+        self.assertLess(bomb.size, 10 * 1024 * 1024)
+        with mock.patch("PIL.ImageFile.ImageFile.load") as load:
+            response = self.post(photos=[bomb])
+        load.assert_not_called()
+        self.assert_rejected(response)
+        self.assertEqual(response.json()["detail"][0]["loc"], ["body", "photos"])
+        self.assertIn("40 megapiksela", response.json()["detail"][0]["msg"])
+
+    def test_too_long_side_is_rejected(self):
+        self.assert_rejected(self.post(photos=[make_image("panorama.png", size=(9000, 100))]))
+
+    def test_phone_sized_photo_is_accepted(self):
+        response = self.post(photos=[make_image("mobitel.png", size=(4032, 3024))])
+
+        self.assertEqual(response.status_code, 201, response.content)
+        stored = ReportPhoto.objects.get()
+        self.assertEqual((stored.width, stored.height), (4032, 3024))
 
     def test_wrong_file_type(self):
         pdf = SimpleUploadedFile("dokument.pdf", b"%PDF-1.4", content_type="application/pdf")

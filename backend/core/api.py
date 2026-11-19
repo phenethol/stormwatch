@@ -9,7 +9,7 @@ from ninja.files import UploadedFile
 from core.errors import ApiError
 from core.measurements import find_nearest_measurement
 from core.models import Report, ReportPhoto, ReportState
-from core.photos import InvalidPhoto, clean_photo
+from core.photos import MAX_PHOTO_SIDE, InvalidPhoto, PhotoTooLarge, clean_photo
 from core.schemas import (
     ErrorOut,
     MyReportFilters,
@@ -44,6 +44,10 @@ def _clean_photos(photos):
             raise ApiError(413, "Fotografija je veća od 10 MB.", "photo_too_large")
     try:
         return [clean_photo(photo) for photo in photos]
+    except PhotoTooLarge:
+        raise _photo_error(
+            f"Fotografija smije imati najviše 40 megapiksela i {MAX_PHOTO_SIDE} px po stranici."
+        )
     except InvalidPhoto:
         raise _photo_error("Dopušteni formati su JPEG, PNG, WebP i HEIC.")
 
