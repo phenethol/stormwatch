@@ -1,0 +1,178 @@
+' ==============================================================================
+' 4-3-stormwatch-auth-CD.puml
+'
+' Svrha:    Dijagram razreda generičke funkcionalnosti: registracija i prijava
+'           Google računom (F-001, F-002, UC-003) te dodjela administratorskih
+'           ovlasti (F-027). Prikazuje vlastite razrede projekta i razrede
+'           biblioteke django-allauth na koje se oslanjaju.
+' Autor:    Tim G08 (StormWatch)
+' AI:       Dijagram je izrađen uz pomoć alata Claude Opus 5.5.
+' Kod:      frontend/src/services/authApi.ts, frontend/src/services/http.ts,
+'           frontend/src/components/AccountDialog.tsx, backend/config/api.py,
+'           backend/core/models.py, forms.py,
+'           validators.py, signals.py
+'
+' Diagram level: Design
+' Diagram type:  Class Diagram
+' Version:       1.0
+' ==============================================================================
+
+@startuml
+!pragma layout smetana
+title Sustav StormWatch – registracija i prijava Google računom
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam ArrowColor #212529
+hide empty members
+
+skinparam class {
+    BackgroundColor #E7F1FF
+    BorderColor #0D6EFD
+    BackgroundColor<<library>> #F8F9FA
+    BorderColor<<library>> #6C757D
+    BackgroundColor<<external system>> #FFF3CD
+    BorderColor<<external system>> #856404
+}
+
+skinparam note {
+    BackgroundColor #F8F9FA
+    BorderColor #212529
+    FontColor #212529
+}
+
+' ==============================================================================
+' Klijentski dio (React)
+' ==============================================================================
+package "Frontend (frontend/src)" {
+
+  class AccountDialog <<component>> {
+    +session: Session
+    +onClose(): void
+  }
+
+  class authApi <<module>> {
+    +loadSession(signal): Session
+    +googleLogin(): void
+    +signup(username: string): void
+    +signOut(): void
+  }
+
+  class http <<module>> {
+    +request(path): T
+    +csrf(): string
+    +write(path, method, body)
+  }
+
+  enum Session {
+    guest
+    account
+    signup
+  }
+}
+
+' ==============================================================================
+' Poslužiteljski dio: vlastiti kod projekta
+' ==============================================================================
+package "Poslužiteljski dio (backend/, Django)" {
+
+  class "config.api" as ConfigApi <<NinjaAPI>> {
+    +get_csrf(): 204
+  }
+
+  class PrivacySignupForm <<Form>> {
+    +privacy_notice_accepted: bool
+    +signup(request, user: User)
+  }
+
+  class "core.validators" as Validators <<module>> {
+    +username_validators
+  }
+
+  class "core.signals" as Signals <<module>> {
+    +grant_admin(user: User)
+  }
+
+  class User <<Entity>> {
+    +username: str
+    +email: str
+    +privacy_accepted_at: datetime [0..1]
+    +is_active: bool
+    +is_staff: bool
+    +is_superuser: bool
+    +is_trusted_observer: bool
+    +is_moderator: bool
+    +is_meteorologist: bool
+    +posting_banned_until: datetime [0..1]
+  }
+
+  class SocialAccount <<library>> {
+    +provider: str
+    +uid: str
+    +extra_data: json
+  }
+
+  class AbstractUser <<library>>
+}
+
+' ==============================================================================
+' Biblioteke (django-allauth i Django)
+' ==============================================================================
+package "django-allauth, način headless (biblioteka)" {
+
+  class RedirectToProviderView <<library>> {
+    +post(provider): redirect
+  }
+
+  class OAuth2CallbackView <<library>> {
+    +dispatch(): redirect
+  }
+
+  class GoogleOAuth2Adapter <<library>> {
+    +complete_login(token): SocialLogin
+  }
+
+  class ProviderSignupView <<library>> {
+    +post(username): session
+  }
+
+  class SessionView <<library>> {
+    +get(): session
+    +delete(): void
+  }
+
+}
+
+class Google <<external system>> {
+  OpenID Connect
+}
+
+' ==============================================================================
+' Veze
+' ==============================================================================
+
+AccountDialog ..> authApi : koristi
+AccountDialog ..> Session
+authApi ..> http : koristi
+http ..> ConfigApi : GET /api/v1/auth/csrf
+
+authApi ..> RedirectToProviderView : POST provider/redirect
+authApi ..> ProviderSignupView : POST provider/signup
+authApi ..> SessionView : GET / DELETE session
+
+RedirectToProviderView ..> Google : preusmjerava
+Google ..> OAuth2CallbackView : /accounts/google/login/callback/
+OAuth2CallbackView ..> GoogleOAuth2Adapter
+GoogleOAuth2Adapter ..> Google : provjera ID tokena
+
+ProviderSignupView ..> PrivacySignupForm : ACCOUNT_SIGNUP_FORM_CLASS
+ProviderSignupView ..> Validators : ACCOUNT_USERNAME_VALIDATORS
+PrivacySignupForm ..> User : postavlja privacy_accepted_at
+
+User --|> AbstractUser
+SocialAccount "0..*" --> "1" User : user
+
+Signals ..> User : is_staff, is_superuser
+
+@enduml
