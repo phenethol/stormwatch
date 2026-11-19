@@ -1,0 +1,139 @@
+' ==============================================================================
+' 3-0-stormwatch-overview-UC.puml
+'
+' Svrha:    Pregledni dijagram obrazaca uporabe: granica sustava, akteri i
+'           njihovi glavni ciljevi u pet područja. Svako područje detaljno
+'           prikazuje vlastiti dijagram (slike 3.2 – 3.6).
+' Autor:    Tim G08 (StormWatch)
+' AI:       Dijagram je izrađen uz pomoć alata Claude Opus 5.5.
+' Zahtjevi: F-001 – F-030; UC-001 – UC-023
+'
+' Diagram level: System Requirements
+' Diagram type:  Use Case Diagram
+' Version:       1.0
+' ==============================================================================
+
+@startuml
+!pragma layout smetana
+title Sustav StormWatch – pregled obrazaca uporabe
+left to right direction
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #212529
+skinparam packageStyle rectangle
+
+skinparam actor {
+    BackgroundColor #F8F9FA
+    BorderColor #212529
+    BackgroundColor<<external system>> #FFF3CD
+    BorderColor<<external system>> #856404
+}
+
+skinparam usecase {
+    BackgroundColor #E7F1FF
+    BorderColor #0D6EFD
+}
+
+skinparam package {
+    BackgroundColor #FFFFFF
+    BorderColor #6C757D
+    FontColor #495057
+}
+
+' ==============================================================================
+' Akteri (A-01 – A-07 iz odjeljka 2.3)
+' ==============================================================================
+
+actor Visitor as "Posjetitelj"
+actor User as "Registrirani\nkorisnik"
+actor Trusted as "Pouzdani\nmotritelj"
+actor Moderator as "Moderator"
+actor Meteorologist as "Meteorolog"
+actor Admin as "Administrator"
+actor Timer as "Vremenski\nokidač"
+
+' Registrirani korisnik ima sve mogućnosti posjetitelja, a pouzdani motritelj
+' sve mogućnosti registriranog korisnika. Moderator, meteorolog i administrator
+' također su registrirani korisnici; ta je veza prikazana na slikama 3.5 i 3.6.
+User -|> Visitor
+Trusted -|> User
+
+' ==============================================================================
+' Granica sustava s glavnim ciljevima po područjima
+' ==============================================================================
+
+rectangle "Sustav StormWatch" {
+
+    package "Javni pregledi i korisnički račun (slika 3.2)" {
+        (UC-001\nPregled karte i slojeva) as UC_Map
+        (UC-003\nPrijava Google računom) as UC_SignIn
+    }
+
+    package "Prijave i zajednička provjera (slika 3.3)" {
+        (UC-006\nPredaja prijave opažanja) as UC_Report
+        (UC-007\nPotvrda ili osporavanje\nprijave) as UC_Vote
+    }
+
+    package "Obavijesti i praćenje (slika 3.4)" {
+        (UC-012\nPostavljanje pravila\nobavijesti) as UC_Rules
+        (UC-015\nSlanje obavijesti) as UC_Send
+    }
+
+    package "Moderacija i stručni sadržaj (slika 3.5)" {
+        (UC-016\nModeracija) as UC_Moderate
+        (UC-019\nStručna obrada\ndogađaja) as UC_Expert
+    }
+
+    package "Administracija i podaci DHMZ-a (slika 3.6)" {
+        (UC-020\nUpravljanje korisnicima\ni sadržajem) as UC_Users
+        (UC-023\nPeriodičko preuzimanje\npodataka DHMZ-a) as UC_Fetch
+    }
+}
+
+' ==============================================================================
+' Vanjski sustavi (A-08 – A-11)
+' ==============================================================================
+
+actor "Google\n(pružatelj identiteta)" as Google <<external system>>
+actor "Kartografska\nusluga" as Maps <<external system>>
+actor "DHMZ" as DHMZ <<external system>>
+actor "Poslužitelj\ne-pošte" as Mail <<external system>>
+
+' ==============================================================================
+' Asocijacije
+' ==============================================================================
+
+Visitor -- UC_Map
+Visitor -- UC_SignIn
+
+User -- UC_Report
+User -- UC_Vote
+User -- UC_Rules
+
+Moderator -- UC_Moderate
+Meteorologist -- UC_Expert
+Admin -- UC_Users
+Timer -- UC_Fetch
+
+UC_SignIn -- Google
+UC_Map -- Maps
+UC_Fetch -- DHMZ
+UC_Send -- Mail
+
+UC_Moderate ..> UC_Send : <<include>>
+UC_Fetch ..> UC_Send : <<include>>
+
+note bottom of Trusted
+  Predaje prijave kao registrirani
+  korisnik (UC-006), ali one ne
+  prolaze moderaciju.
+end note
+
+note bottom of Admin
+  Moderator, meteorolog i administrator
+  registrirani su korisnici s dodatnom
+  ulogom (slike 3.5 i 3.6).
+end note
+
+@enduml

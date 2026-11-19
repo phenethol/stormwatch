@@ -2,21 +2,29 @@
 
 ## 3.1 Dijagrami obrazaca uporabe
 
-Obrasci uporabe prikazani su na pet manjih dijagrama, po istim područjima po kojima su grupirani funkcijski zahtjevi u [odjeljku 2.1](2-Analiza-zahtjeva.md#21-funkcijski-zahtjevi). Svaki dijagram prikazuje samo aktere važne za svoje područje. Registrirani korisnik nasljeđuje posjetitelja, a pouzdani motritelj, moderator, meteorolog i administrator nasljeđuju registriranog korisnika i mogu sve što i on.
+Pregledni dijagram (slika 3.1) prikazuje granicu sustava, sve aktere i njihove glavne ciljeve, grupirane u pet područja. Svako područje ima naznačenu sliku s detaljnim dijagramom.
+
+![Pregledni dijagram obrazaca uporabe sustava StormWatch](./assets/diagrams/3-0-stormwatch-overview-UC.svg)
+
+**Slika 3.1. Pregled obrazaca uporabe**
+
+**PlantUML izvor:** [izvor](./puml/3-0-stormwatch-overview-UC.puml)
+
+Svi obrasci uporabe prikazani su na pet manjih dijagrama (slike 3.2 – 3.6), po istim područjima po kojima su grupirani funkcijski zahtjevi u [odjeljku 2.1](2-Analiza-zahtjeva.md#21-funkcijski-zahtjevi). Svaki dijagram prikazuje samo aktere važne za svoje područje. Registrirani korisnik nasljeđuje posjetitelja, a pouzdani motritelj, moderator, meteorolog i administrator nasljeđuju registriranog korisnika i mogu sve što i on.
 
 | Slika | Područje                          | Obrasci uporabe | Akteri                                                          |
 | ----- | --------------------------------- | --------------- | --------------------------------------------------------------- |
-| 3.1   | Javni pregledi i korisnički račun | UC-001 – UC-005 | Posjetitelj, registrirani korisnik, kartografska usluga, Google |
-| 3.2   | Prijave i zajednička provjera     | UC-006 – UC-011 | Registrirani korisnik, pouzdani motritelj                       |
-| 3.3   | Obavijesti i praćenje             | UC-012 – UC-015 | Registrirani korisnik, poslužitelj e-pošte                      |
-| 3.4   | Moderacija i stručni sadržaj      | UC-016 – UC-019 | Moderator, meteorolog                                           |
-| 3.5   | Administracija i podaci DHMZ-a    | UC-020 – UC-023 | Administrator, vremenski okidač, DHMZ                           |
+| 3.2   | Javni pregledi i korisnički račun | UC-001 – UC-005 | Posjetitelj, registrirani korisnik, kartografska usluga, Google |
+| 3.3   | Prijave i zajednička provjera     | UC-006 – UC-011 | Registrirani korisnik, pouzdani motritelj                       |
+| 3.4   | Obavijesti i praćenje             | UC-012 – UC-015 | Registrirani korisnik, poslužitelj e-pošte                      |
+| 3.5   | Moderacija i stručni sadržaj      | UC-016 – UC-019 | Moderator, meteorolog                                           |
+| 3.6   | Administracija i podaci DHMZ-a    | UC-020 – UC-023 | Administrator, vremenski okidač, DHMZ                           |
 
 ### 3.1.1 Javni pregledi i korisnički račun
 
 ![Dijagram obrazaca uporabe: javni pregledi i korisnički račun](./assets/diagrams/3-1-stormwatch-public-account-UC.svg)
 
-**Slika 3.1. Javni pregledi i korisnički račun**
+**Slika 3.2. Javni pregledi i korisnički račun**
 
 **PlantUML izvor:** [izvor](./puml/3-1-stormwatch-public-account-UC.puml)
 
@@ -24,7 +32,7 @@ Obrasci uporabe prikazani su na pet manjih dijagrama, po istim područjima po ko
 
 ![Dijagram obrazaca uporabe: prijave i zajednička provjera](./assets/diagrams/3-2-stormwatch-reports-UC.svg)
 
-**Slika 3.2. Prijave i zajednička provjera**
+**Slika 3.3. Prijave i zajednička provjera**
 
 **PlantUML izvor:** [izvor](./puml/3-2-stormwatch-reports-UC.puml)
 
@@ -32,7 +40,7 @@ Obrasci uporabe prikazani su na pet manjih dijagrama, po istim područjima po ko
 
 ![Dijagram obrazaca uporabe: obavijesti i praćenje](./assets/diagrams/3-3-stormwatch-notifications-UC.svg)
 
-**Slika 3.3. Obavijesti i praćenje**
+**Slika 3.4. Obavijesti i praćenje**
 
 **PlantUML izvor:** [izvor](./puml/3-3-stormwatch-notifications-UC.puml)
 
@@ -40,7 +48,7 @@ Obrasci uporabe prikazani su na pet manjih dijagrama, po istim područjima po ko
 
 ![Dijagram obrazaca uporabe: moderacija i stručni sadržaj](./assets/diagrams/3-4-stormwatch-moderation-UC.svg)
 
-**Slika 3.4. Moderacija i stručni sadržaj**
+**Slika 3.5. Moderacija i stručni sadržaj**
 
 **PlantUML izvor:** [izvor](./puml/3-4-stormwatch-moderation-UC.puml)
 
@@ -48,7 +56,7 @@ Obrasci uporabe prikazani su na pet manjih dijagrama, po istim područjima po ko
 
 ![Dijagram obrazaca uporabe: administracija i podaci DHMZ-a](./assets/diagrams/3-5-stormwatch-admin-UC.svg)
 
-**Slika 3.5. Administracija i podaci DHMZ-a**
+**Slika 3.6. Administracija i podaci DHMZ-a**
 
 **PlantUML izvor:** [izvor](./puml/3-5-stormwatch-admin-UC.puml)
 
@@ -156,6 +164,8 @@ Svi obrasci uporabe sažeti su u tablici ispod, a šest ključnih (UC-001, UC-00
 | ---------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Zahtjev    | Je li svaki važan obrazac uporabe povezan s postojećim zahtjevom?                                                           | Da: sva 23 obrasca uporabe navode postojeće zahtjeve iz 2.1, a svaki funkcijski zahtjev pokriven je barem jednim obrascem uporabe. |
 | Akter      | Odgovara li akter naveden ovdje prethodno utvrđenoj ulozi i dopuštenoj interakciji?                                         | Da: primarni akteri su A-01 – A-07 iz 2.3; dionik D-01 nije akter.                                                                 |
-| Aplikacija | Može li tim demonstrirati opisani glavni rezultat i važnu alternativu ili je opis jasno označen kao trenutačno oblikovanje? | Ne još: aplikacija nije izgrađena, pa su svi opisi **trenutačno oblikovanje**. Ažuriraju se nakon Iteracije 1.                     |
+| Aplikacija | Može li tim demonstrirati opisani glavni rezultat i važnu alternativu ili je opis jasno označen kao trenutačno oblikovanje? | Djelomično. U prvoj inačici mogu se demonstrirati UC-003 (prijava i registracija Google računom), UC-001 (karta s prijavama i postajama, bez sloja upozorenja), UC-006 (predaja prijave s fotografijama i spremanjem mjerenja najbliže postaje, bez pridruživanja događaju i bez obavijesti) i UC-023 (preuzimanje mjerenja DHMZ-a, koje pokreće prvi zahtjev za postajama nakon isteka P-10, a ne vremenski okidač; vidi [4.1](4-Arhitektura-i-oblikovanje.md#41-ključne-arhitekturne-odluke)). Prijave na čekanju potvrđuje administrator u Django Adminu, a ne moderator (UC-016). Ostali obrasci uporabe **trenutačno su oblikovanje**. |
+
+Cjelovito mapiranje zahtjeva, obrazaca uporabe i njihove realizacije održava se u [tablici sljedivosti zahtjeva](2-Analiza-zahtjeva.md#26-sljedivost-zahtjeva).
 
 ---
