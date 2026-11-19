@@ -1,51 +1,47 @@
 cff-version: 1.2.0
 message: >-
-  If you use this documentation template in academic work, teaching
-  materials, or software engineering projects, please cite it using
-  the metadata below.
-  Documentation structure adapted from the FER Software Engineering course 
-  template by Vlado Sruk, licensed under CC BY-NC-SA 4.0. 
-title: "Software Engineering Project Documentation Template"
+  If you use this software, please cite it using the metadata below.
+  The project documentation is adapted from the FER Software Engineering
+  course template by Vlado Sruk (CC BY-NC-SA 4.0), listed under references.
+title: "StormWatch"
 type: software
 authors:
-  - family-names: "Sruk"
-    given-names: "Vlado"
-    orcid: "https://orcid.org/0000-0003-0411-3398"
-    affiliation: "Sveučilište u Zagrebu Fakultet elektrotehnike i računarstva"
-version: "2.0.0"
-date-released: "2026-09-29"
-repository-code: "https://github.com/VladoSruk/Programsko-inzenjerstvo"
-url: "https://github.com/VladoSruk/Programsko-inzenjerstvo"
-license: "CC-BY-NC-SA-4.0"
+  - given-names: "Mario"
+    family-names: "Vrdoljak"
+  - given-names: "Stipe"
+    family-names: "Kujundžić"
+  - given-names: "Stipe"
+    family-names: "Ledić"
+  - given-names: "Ivan"
+    family-names: "Rajilić"
+  - given-names: "Tin"
+    family-names: "Jović"
+  - given-names: "Petar"
+    family-names: "Rogić"
+  - given-names: "David"
+    family-names: "Režić"
+license: MIT
+repository-code: "https://github.com/phenethol/stormwatch"
+url: "https://stormwatch-4013.onrender.com/"
 abstract: >-
-  An open educational resource providing a standardized documentation
-  structure for student software projects developed within the
-  Software Engineering course at the Faculty of Electrical Engineering
-  and Computing (FER), University of Zagreb. The template covers
-  project description, requirements, deployment, installation,
-  technology selection rationale, licensing, AI usage disclosure,
-  teamwork reporting, and project governance.
+  Mobile-friendly web application that shows official DHMZ weather station
+  measurements and user-submitted severe weather reports on one map of
+  Croatia. Developed by student team G08 StormBusters in the Software
+  Engineering course at the Faculty of Electrical Engineering and Computing
+  (FER), University of Zagreb.
 keywords:
-  - "software engineering"
-  - "project documentation"
-  - "README template"
-  - "GitHub"
-  - "software architecture"
-  - "requirements engineering"
-  - "project management"
-  - "software testing"
-  - "educational resource"
-  - "open educational resources"
-  - "AI usage policy"
-preferred-citation:
-  type: generic
-  authors:
-    - family-names: "Sruk"
-      given-names: "Vlado"
-      orcid: "https://orcid.org/0000-0003-0411-3398"
-  title: "Software Engineering Project Documentation Template"
-  year: 2026
-  version: "3.0.0"
-  url: "https://github.com/VladoSruk/Programsko-inzenjerstvo"
-  institution:
-    name: "Sveučilište u Zagrebu Fakultet elektrotehnike i računarstva"
+  - "severe weather"
+  - "crowdsourcing"
+  - "DHMZ"
+  - "Django"
+  - "React"
+references:
+  - type: generic
+    title: "Software Engineering Project Documentation Template"
+    authors:
+      - family-names: "Sruk"
+        given-names: "Vlado"
+        orcid: "https://orcid.org/0000-0003-0411-3398"
+    year: 2026
+    url: "https://github.com/VladoSruk/Programsko-inzenjerstvo"
+    license: CC-BY-NC-SA-4.0
