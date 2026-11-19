@@ -4,7 +4,7 @@
 ' Svrha:    Logički podatkovni model prve inačice: korisnici i njihovi Google
 '           računi, prijave s fotografijama te mjerne postaje i mjerenja DHMZ-a.
 '           Nazivi stupaca odgovaraju Django modelima.
-' Autor:    Tim G08 (StormWatch)
+' Autor:    Tim G08.3 (StormWatch)
 ' AI:       Dijagram je izrađen uz pomoć alata Claude Opus 5.5.
 ' Kod:      backend/core/models.py, backend/dhmz/models.py,
 '           allauth.socialaccount.models.SocialAccount

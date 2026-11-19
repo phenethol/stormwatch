@@ -4,7 +4,7 @@
 ' Svrha:    Javni pregledi i korisnički račun: što posjetitelj može bez prijave
 '           u sustav i kako registrirani korisnik upravlja svojim računom.
 '           Registracija i prijava moguće su isključivo Google računom.
-' Autor:    Tim G08 (StormWatch)
+' Autor:    Tim G08.3 (StormWatch)
 ' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
 '           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
 ' Zahtjevi: F-001 – F-008; UC-001 – UC-005
