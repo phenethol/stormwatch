@@ -3,7 +3,7 @@
 '
 ' Svrha:    Obavijesti i praćenje: pravila obavijesti, praćenje korisnika i
 '           lokacija, pregled obavijesti i njihovo slanje.
-' Autor:    Tim G08 (StormWatch)
+' Autor:    Tim G08.3 (StormWatch)
 ' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
 '           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
 ' Zahtjevi: F-018 – F-020; UC-012 – UC-015

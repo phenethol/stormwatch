@@ -2,7 +2,7 @@
 
 **Kolegij:** [Programsko inženjerstvo](https://www.fer.unizg.hr/predmet/proinz), Fakultet elektrotehnike i računarstva Sveučilišta u Zagrebu  
 **Akademska godina:** 2026./2027.  
-**Tim:** G08 StormBusters  
+**Tim:** G08.3 StormBusters  
 **Nastavnik:** Vlado Sruk  
 **Asistent:** Marin Matjanec
 
@@ -36,7 +36,7 @@ Ažurirani popis članova, njihovih GitHub profila i glavnih uloga ili doprinosa
 
 | Kontrolna točka | Demonstracija | Video |
 | --- | --- | --- |
-| Iteracija 1 | [Javno dostupna aplikacija](https://stormwatch-4013.onrender.com/) | Nije snimljen |
+| Iteracija 1 | [Javno dostupna aplikacija](https://stormwatch-4013.onrender.com/) | [Demo video](assets/video/stormwatch-demo-iteracija-1.mp4) |
 | Završni pregled | Dodaje se nakon završnog pregleda | Dodaje se nakon završnog pregleda |
 
 Dokumentacija se kontinuirano ažurira kako se aplikacija razvija.

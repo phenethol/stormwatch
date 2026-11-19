@@ -3,7 +3,7 @@
 '
 ' Svrha:    Prijave opažanja i zajednička provjera: predaja prijave, glasanje,
 '           komentari, događaji i statistika.
-' Autor:    Tim G08 (StormWatch)
+' Autor:    Tim G08.3 (StormWatch)
 ' AI:       Dijagram je izdvojen iz zajedničkog dijagrama obrazaca uporabe uz
 '           pomoć alata Claude; tim ga je pregledao i odgovara za sadržaj.
 ' Zahtjevi: F-009 – F-017; UC-006 – UC-011
