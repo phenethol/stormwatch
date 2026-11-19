@@ -1,117 +1,70 @@
 # A. Pregled aktivnosti grupe
 
-**Cilj:** Prikazati kako je tim organizirao projekt, raspodijelio rad, reagirao na važne probleme i pridonio rezultatu. Zapisi trebaju opisivati ishode, a ne samo navoditi da je sastanak održan ili da se o nekoj temi raspravljalo.
-
 ## A.1 Evidencija sastanaka
 
-**Cilj:** Voditi kratak zapis projektnih sastanaka i tjedne koordinacije: tko je sudjelovao, što je odlučeno i koja je radnja uslijedila. Raspravu koja nije dovela do odluke zabilježite samo ako je važno pitanje ostalo otvoreno.
+**Kratice članova tima:** MV = Mario Vrdoljak; SK = Stipe Kujundžić; SL = Stipe Ledić; IR = Ivan Rajilić; TJ = Tin Jović; PRo = Petar Rogić; DR = David Režić.
 
->Definirati prije prve uporabe:
-`[Inicijali/Kratica] = [Ime i prezime]` (npr. *AK = Ana Kovač; LM = Luka Marić; EP = Ema Petrović; NK = Nika Kralj*).																														
-
-| Datum i sudionici | Glavna tema | Donesena odluka ili zadatak  | Poveznica na zadatak ili  rezultat, ako postoji |
+| Datum i sudionici | Glavna tema | Donesena odluka ili zadatak | Poveznica na zadatak ili rezultat, ako postoji |
 | --- | --- | --- | --- |
-|  |  |  |  |
-
-Za svaki relevantan sastanak ili zapis tjedne koordinacije upišite jedan sažet redak. Dodijeljeni zadatak treba imati odgovornu osobu; za neriješeno pitanje treba navesti tko će ga dalje obraditi. Sam naslov sastanka ne pokazuje što se promijenilo. U ovu evidenciju nemojte kopirati cijeli popis issuea ni prijepis razgovora.
-
-<details>
-<summary><strong>Primjer evidencije sastanaka (CrisisMap)</strong></summary>
-
-**Primjer — CrisisMap:**
-
-**Kratice članova tima:** AK = Ana Kovač; LM = Luka Marić; EP = Ema Petrović; NK = Nika Kralj.
-
-| Datum i sudionici | Glavna tema | Odluka, radnja ili otvoreno pitanje | Poveznica na zadatak ili nastali rezultat, ako postoji |
-| --- | --- | --- | --- |
-| 15. 11. 2025.; AK, LM, EP | Lokacija kada je pristup preglednika odbijen | Dodati ručni odabir položaja na karti u obrazac za prijavu. AK obrađuje obrazac; LM provjerava valjanost lokacije. | Zadataka #21 i #23. |
-| 22. 11. 2025.; AK, EP | Usklađivanje formata lokacijskih podataka | klijentski dio i poslužiteljski API koriste neusklađene formate koordinata. EP će uskladiti format zahtjeva i demonstrira spremanje na sljedećem pregledu. | Zadatak #25. |
-
-**Ishod i odgovornost:** Zapisi jasno definiraju tko je odgovoran za koji dio posla i koji je provjerljivi rezultat dogovoren. npr Rečenica „Raspravljali smo o obradi lokacije” prikrila bi je li se itko obvezao na promjenu. Ovi redci navode odluku ili otvorenu radnju, odgovornu osobu i rezultat koji se može pregledati.
-
-</details>
+| 30. 10. 2026.; svi članovi (MV, SK, SL, IR, TJ, PRo, DR), FER | Funkcijski i nefunkcijski zahtjevi | Dogovoreno je koje funkcijske i nefunkcijske zahtjeve tim razrađuje i koji imaju visok prioritet za prvu inačicu: prijava Google računom i javni pregledi, predaja prijave s mjerenjem najbliže postaje, potvrde i osporavanja, moderacija te karta sa slojevima postaja i prijava. Zahtjevi su predstavljeni u prezentaciji „StormWatch: zahtjevi i obrasci uporabe”. | [2. Analiza zahtjeva](2-Analiza-zahtjeva.md) |
+| 4. 11. 2026.; svi članovi, knjižnica FER-a | Odabir tehnologija | Backend: Django s Django Ninjom, django-allauth za prijavu Google računom i Django sesija; baza PostgreSQL, lokalno u Dockeru; frontend: React s TypeScriptom, Vite, Tailwind CSS i Leaflet; smještaj na Renderu; GitHub Actions za CI i PlantUML za dijagrame. Odluke su predstavljene u prezentaciji „StormWatch: odabrane tehnologije”, a kasnije promjene opisane su u odjeljku 4.1. | [README – Tehnologije](../README.md#tehnologije), [4.1](4-Arhitektura-i-oblikovanje.md#41-ključne-arhitekturne-odluke) |
+| 5. 11. 2026.; svi članovi | Podjela rada i početak implementacije | Backend preuzimaju MV, SK i SL, a frontend PRo, TJ, IR i DR. Zadaci prve inačice raspoređeni su prema I-02 – I-06 i počela je intenzivna implementacija. | [Prekretnica „Prva inačica (MVP)”](https://github.com/phenethol/stormwatch/milestone/1), [PR #15 – #21](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged) |
 
 ## A.2 Plan rada
 
-**Cilj:** Prikazati planirani redoslijed rada i odgovornosti u timu. Prikažite projektne tjedne ili druga kratka razdoblja koja tim koristi, uključujući pripremu za formalne provjere.
+**Trenutačni plan:** [prekretnica „Prva inačica (MVP)”](https://github.com/phenethol/stormwatch/milestone/1) sa zadacima I-01 – I-08. Zadatke je otvorio i plan vodi MV.
 
-**Trenutačni plan:** [Poveznica na GitHub Projects ploču, Gantogram ili održavanu tablicu u nastavku. Navesti osobu zaduženu za ažurnost plana. Odaberite jedan glavni prikaz i navedite tko ga održava ažurnim.]
-
-| Razdoblje/Tjedan | Glavni planirani rad | Odgovorni članovi | Poveznica na zadatke |
+| Razdoblje | Glavni planirani rad | Odgovorni članovi | Poveznica na zadatke |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| 12. – 18. 10. 2026. | Postavljanje repozitorija iz predloška kolegija | MV | Početni zapis promjena |
+| 19. – 25. 10. 2026. | Opseg projekta, zahtjevi i obrasci uporabe; podjela posla u zadatke I-01 – I-08; početna konfiguracija frontenda | MV, PRo | [I-01 – I-08](https://github.com/phenethol/stormwatch/milestone/1), [PR #10](https://github.com/phenethol/stormwatch/pull/10) |
+| 26. 10. – 1. 11. 2026. | Pojednostavljenje zahtjeva i obrazaca uporabe nakon povratne informacije asistenta; prijava isključivo Google računom | SL | [PR #11](https://github.com/phenethol/stormwatch/pull/11) |
+| 2. – 8. 11. 2026. | OpenAPI ugovor između frontenda i backenda; karta s mjernim postajama na lažnim podacima | MV, TJ | [PR #12](https://github.com/phenethol/stormwatch/pull/12), [PR #14](https://github.com/phenethol/stormwatch/pull/14) (I-04a) |
+| 9. – 15. 11. 2026. | Temelj backenda; PostgreSQL u Dockeru, prijava Google računom i predaja prijave; CI i CD; podaci DHMZ-a; API prijava; početni pregled „Moje prijave” | SK, MV, SL, PRo | [PR #15 – #21](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged) (I-02, I-03, I-05, I-06) |
+| 16. – 20. 11. 2026. | Frontend prve inačice povezan sa stvarnim backendom; postavljanje kao jedna usluga na Renderu; dokumentacija za predaju | Svi članovi | [PR #24 – #45](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged) |
 
-Ako koristite tablicu, plan vodite na korisnoj tjednoj razini i ažurirajte ga kada se prioriteti promijene. Kratice članova tima definirajte  u A.1 i ovdje ih primjenjujte dosljedno; ako dva člana imaju iste inicijale, proširite kraticu. Plan nije dokaz da je planirani rad dovršen (to dokazuje kod i dokumentacija).
-
-<details>
-<summary><strong>Primjer plana rada</strong></summary>
-
-**Primjer — CrisisMap:** Plan rada obuhvaća razvoj prijava, karte i postavljanja aplikacije. Za svako razdoblje navedeni su glavni zadaci i odgovorni članovi.
-
-| Razdoblje | Glavni planirani rad | Odgovorni članovi | Poveznica na zadatke/opis |
-| --- | --- | --- | --- |
-| Projektni tjedan 6 | Obrazac za prijavu i provjera valjanosti lokacije | AK, LM | Zadataka #21 i #23. |
-| Projektni tjedan 7 | Povezivanje obrasca s API-jem za prijave | EP | Zadatak #25. |
-
-**Čitanje plana:** Kratice štede prostor u sažetom planu; njihove definicije s početka A.1 vrijede u cijelom ovom primjeru. Kada rad kasni, ažurirajte stvarni zadatak i očekivanje u planu; nemojte tvrditi da je nedovršena funkcionalnost završena samo zato što je predviđeni tjedan prošao.
-
-</details>
+Tablica prikazuje glavni rad po tjednima prve inačice. Plan druge inačice (I-07 potvrda i osporavanje, I-08 moderacija, upozorenja DHMZ-a i obavijesti) dodaje se nakon pregleda Iteracije 1.
 
 ## A.3 Aktivnosti i doprinosi članova
 
-**Cilj:** Prikazati koji su članovi radili na važnim projektnim aktivnostima i približan trud koji prijavljuju. Uz implementaciju uključite oblikovanje, dokumentaciju, integraciju, ispitivanje i postavljanje.
-
-| Aktivnost ili rezultat | Član | Prijavljeni sati | Reprezentativni rezultat ili poveznica |
+| Aktivnost ili rezultat | Član | Procijenjeni sati | Reprezentativni rezultat ili poveznica |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| Postavljanje repozitorija, zadaci I-01 – I-08 i OpenAPI ugovor | MV | 12 | Zadaci I-01 – I-08; [PR #12](https://github.com/phenethol/stormwatch/pull/12) |
+| Backend: PostgreSQL u Dockeru, predaja prijave, API prijava, obrada fotografija i pravila vidljivosti | MV | 11 | [PR #17](https://github.com/phenethol/stormwatch/pull/17), [PR #21](https://github.com/phenethol/stormwatch/pull/21) |
+| CI i CD, postavljanje na Render, produkcijska adresa i karta u produkciji | MV | 7 | [PR #18](https://github.com/phenethol/stormwatch/pull/18), [#19](https://github.com/phenethol/stormwatch/pull/19), [#30](https://github.com/phenethol/stormwatch/pull/30), [#32](https://github.com/phenethol/stormwatch/pull/32) |
+| Temelj backenda: Django, django-allauth, Django Ninja i model korisnika | SK | 15 | [PR #16](https://github.com/phenethol/stormwatch/pull/16) |
+| Pojednostavljenje zahtjeva i obrazaca uporabe | SL | 5 | [PR #11](https://github.com/phenethol/stormwatch/pull/11) |
+| Prijava Google računom: CSRF i dovršetak registracije | SL | 2 | Zapis promjena 338d77b u [PR #17](https://github.com/phenethol/stormwatch/pull/17) |
+| Podaci DHMZ-a i API postaja; posluživanje frontenda na Renderu | SL | 6 | [PR #20](https://github.com/phenethol/stormwatch/pull/20), [PR #24](https://github.com/phenethol/stormwatch/pull/24) |
+| Dokumentacija za prvu predaju | SL | 13 | [PR #42 – #45](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged) |
+| Frontend: početna konfiguracija, „Moje prijave”, Vite proxy, obrazac prijave i povezivanje stranica | PRo | 19 | [PR #10](https://github.com/phenethol/stormwatch/pull/10), [#15](https://github.com/phenethol/stormwatch/pull/15), [#25](https://github.com/phenethol/stormwatch/pull/25), [#35](https://github.com/phenethol/stormwatch/pull/35), [#39](https://github.com/phenethol/stormwatch/pull/39) |
+| Frontend: karta mjernih postaja, prijava Google računom i dijalog računa, „Moje prijave” sa stanjima | TJ | 20 | [PR #14](https://github.com/phenethol/stormwatch/pull/14), [#33](https://github.com/phenethol/stormwatch/pull/33), [#34](https://github.com/phenethol/stormwatch/pull/34) |
+| Frontend: ikona i metapodaci, Vitest, karta prijava, stranica karte s popisom, filtrima i detaljima | IR | 20 | [PR #28](https://github.com/phenethol/stormwatch/pull/28), [#29](https://github.com/phenethol/stormwatch/pull/29), [#37](https://github.com/phenethol/stormwatch/pull/37), [#38](https://github.com/phenethol/stormwatch/pull/38) |
+| Frontend: stilovi i zajedničke komponente, pretraga mjesta, integracijski testovi | DR | 18 | [PR #26](https://github.com/phenethol/stormwatch/pull/26), [#27](https://github.com/phenethol/stormwatch/pull/27), [#31](https://github.com/phenethol/stormwatch/pull/31), [#36](https://github.com/phenethol/stormwatch/pull/36), [#40](https://github.com/phenethol/stormwatch/pull/40) |
 
-Koristite aktivnosti specifične za projekt umjesto obaveznog retka za svako poglavlje dokumentacije ili svaki UML dijagram. Tim treba dosljedno bilježiti sate i izbjegavati dvostruko brojanje zajedničkog rada; reprezentativni rezultat objašnjava što je prijavljeni trud proizveo. Sati su samoprijavljena procjena uloženog rada, a ne mjera kvalitete niti zamjena za pregled koda i artefakata.
-
-<details>
-<summary><strong>Primjer aktivnosti i rezultata rada</strong></summary>
-
-**Primjer — CrisisMap:** Tablica razlikuje implementaciju, integraciju i dokumentaciju te svaku aktivnost povezuje s rezultatom.
-
-| Aktivnost ili rezultat | Član | Prijavljeni sati | Reprezentativni rezultat ili poveznica |
-| --- | --- | --- | --- |
-| Ručni unos položaja na karti | AK | 8 | Zadatak #21; promjena klijentskog dijela. |
-| Provjera valjanosti i trajna pohrana prijave | LM | 10 | Zadatak #23; promjena pozadinskog sustava i ispitivanje. |
-| Integracija klijenta i API-ja te javno postavljanje | EP | 7 | Zadatak #25; konfiguracija u `render.yaml` i `dist/` |
-| Obrazac uporabe za podnošenje prijave i provjera odbijenog dopuštenja | NK | 5 | Završene izmjene UC-002 i ispitivanje ST-03. |
-
-**Trud i rezultat:** Završni stupac omogućuje raspravu o doprinosu bez tretiranja velikog broja sati kao dokaza isporuke. Tim može prijaviti stvarno dugotrajan, još neriješen problem integracije kao obavljen rad i iskreno opisati njegov ishod.
-
-</details>
+Tim nije vodio evidenciju sati tijekom rada, pa su sati procjena. Raspon od 15 do 30 sati po članu procijenio je tim, a unutar njega sati su raspoređeni razmjerno opsegu promjena u repozitoriju: izmijenjenim retcima (bez generiranih datoteka) i spojenim pull requestovima. Ukupno po članu: MV 30, SL 26, IR 20, TJ 20, PRo 19, DR 18 i SK 15 sati.
 
 ## A.4 Pregled promjena u repozitoriju
 
-**Cilj:** Prikazati kada su promjene napravljene u repozitoriju i tko ih je napravio, uz napomenu da sam broj zapisa promjena ne mjeri kvalitetu doprinosa.
+**Prikaz aktivnosti repozitorija:** [GitHub Contributors](https://github.com/phenethol/stormwatch/graphs/contributors) za razdoblje od 13. 10. do 19. 11. 2026.
 
-**Prikaz aktivnosti repozitorija:** [Ugradite ili povežite GitHubov prikaz `Contributors` i generirani graf za projektni repozitorij; navedite razdoblje koje obuhvaća.]
+| Član | GitHub račun | Zapisi promjena (bez spajanja) | Spojeni pull requestovi |
+| --- | --- | --- | --- |
+| Mario Vrdoljak | [phenethol](https://github.com/phenethol) (u gitu i `ethylphenol`) | 27 | 9 |
+| Stipe Ledić | [iStels](https://github.com/iStels) | 9 | 7 |
+| Petar Rogić | [petarrogic](https://github.com/petarrogic) | 7 | 5 |
+| David Režić | [davidrezic](https://github.com/davidrezic) | 5 | 5 |
+| Ivan Rajilić | [irajilic](https://github.com/irajilic) | 4 | 4 |
+| Tin Jović | [tjovic5](https://github.com/tjovic5) | 4 | 3 |
+| Stipe Kujundžić | [stipeKujundzic](https://github.com/stipeKujundzic) | 1 | 1 |
 
-Graf može pokazati kada su zapisi promjena napravljeni i tko ih je napravio, ali ne prikazuje sav rad na oblikovanju, ispitivanju, integraciji, pregledu ili dokumentaciji. Ako postoji uočljiv nesklad s tablicom aktivnosti, kratko ga objasnite; nemojte iz grafa izvoditi broj sati. Generirani prikaz neka bude vezan uz stvarni repozitorij umjesto da se ručno crta drugi graf.
+Broj zapisa promjena ne mjeri veličinu doprinosa. SK je cijeli temelj backenda predao jednim zapisom (PR #16), a zapis 338d77b (SL) ušao je u `main` kroz PR #17 koji je otvorio MV. Jedini preostali zapis napravio je `github-actions[bot]`, koji iz PlantUML izvora generira SVG dijagrame.
 
 ## A.5 Ključni inženjerski izazovi i rješenja
 
-**Cilj:** Dokumentirati stvarne tehničke i organizacijske prepreke s kojima se tim suočio, poduzete korektivne inženjerske korake te konačni ishod. Odaberite konkretne izazove umjesto općenite pohvale timskog rada.
-
 | Izazov | Poduzeta radnja | Ishod ili preostalo ograničenje |
 | --- | --- | --- |
-|  |  |  |
-
-<details>
-<summary><strong>Rješavanje nesklada formata lokacije</strong></summary>
-
-**Primjer — CrisisMap:**
-
-| Izazov | Poduzeta radnja | Ishod ili preostalo ograničenje |
-| --- | --- | --- |
-| Odabrani položaj na karti prikazivao se u klijentu, ali podnesena prijava nije zadržavala koordinate. | AK i EP usporedile su zahtjev preglednika s poljima lokacije koje očekuje API; AK je uskladila format zahtjeva, a LM je dodao provjeru valjanosti lokacije. | Nova prijava u ovom se scenariju može dohvatiti sa spremljenim položajem; tim povezuje odgovarajuću promjenu integracije i provjeru. |
-
-**Problem, odgovor i ishod:** Svaki se dio može provjeriti u projektu. Rečenica poput „imali smo poteškoće s integracijom i riješili ih timskim radom” ne bi čitatelju rekla što nije radilo ni kako je rješenje promijenjeno.
-
-</details>
-
----
-
->**Završna provjera:** Sastanci navode smislene ishode i odgovorne osobe; plan odražava namjeravani rad; tablica uloženog rada i generirani prikaz repozitorija odnose na ovaj vidljivi projekt; konkretni izazovi povezani su s radnjama i njihovim rezultatima. 
+| Pri lokalnom razvoju Django je Googleu slao povratnu adresu na `127.0.0.1:8000`, pa je Google javljao `redirect_uri_mismatch`, a kolačići sesije ne prelaze između različitih podrijetla frontenda i backenda. | PRo je u Vite proxyju za `/api/v1`, `/_allauth` i `/accounts` postavio `changeOrigin: false` (PR #25), SL je popravio CSRF i dovršetak registracije, a na Renderu Django poslužuje izgrađeni frontend s iste domene (SL, PR #24). | Prijava Google računom radi lokalno i na javnoj adresi. Ovisnost o istom podrijetlu zabilježena je u [4.7](4-Arhitektura-i-oblikovanje.md#47-arhitekturni-rizici-i-tehnički-dug). |
+| XML DHMZ-a nema šifru postaje, broj postaja mijenja se po terminu mjerenja (otprilike 60 – 70), a besplatni Render nema raspoređivač poslova. | SL je postaju vezao uz naziv, par (postaja, termin) učinio jedinstvenim i uveo lijeno preuzimanje uz uvjetni UPDATE nad `FetchStatus` i interval P-10 (PR #20). | Postaje rade bez raspoređivača. Ograničenja: preimenovana postaja postaje nova postaja, a podaci se osvježavaju samo dok netko otvara kartu. |
+| Prvi popis zahtjeva bio je preopsežan: 60 funkcijskih i 23 nefunkcijska zahtjeva te 29 obrazaca uporabe na jednom velikom dijagramu. | Na prijedlog asistenta SL je srodne zahtjeve i obrasce uporabe spojio u pet područja (PR #11). | 30 funkcijskih i 12 nefunkcijskih zahtjeva te 23 obrasca uporabe, svaki s prioritetom i kriterijem prihvaćanja; opseg prve inačice jasno je odvojen ([2.5](2-Analiza-zahtjeva.md#25-značajne-promjene-zahtjeva)). |
+| Frontend i backend razvijali su se usporedno, prije nego što je API postojao. | MV je zapisao OpenAPI ugovor (PR #12); frontend je radio nad lažnim poslužiteljem Prism, a zatim prešao na stvarni backend (PR #25, #39). | Razlike u ugovoru, npr. podjela kategorije kiše na `heavy_rain` i `flood`, ispravljene su u ugovoru, migraciji i frontendu (MV, PR #23). |
