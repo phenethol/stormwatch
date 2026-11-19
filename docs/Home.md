@@ -1,37 +1,28 @@
-# [Naziv aplikacije] — Projektna dokumentacija
+# StormWatch — Projektna dokumentacija
 
 **Kolegij:** [Programsko inženjerstvo](https://www.fer.unizg.hr/predmet/proinz), Fakultet elektrotehnike i računarstva Sveučilišta u Zagrebu  
-**Akademska godina:** [20XX./20XX.]  
-**Tim:** [Oznaka i naziv tima]  
+**Akademska godina:** 2026./2027.  
+**Tim:** G08 StormBusters  
 **Nastavnik:** Vlado Sruk  
-**Asistent / demonstrator:** [Ime i uloga u ovom izvođenju kolegija]
+**Asistent:** Marin Matjanec
 
 ## Pregled projekta
 
-**Cilj:** Omogućiti čitatelju koji prvi put vidi projekt da u dvije ili tri rečenice prepozna aplikaciju, njezine ciljane korisnike i glavnu svrhu.
-
-[Opis projekta.]
-
-<details>
-<summary><strong>Sažet pregled projekta</strong></summary>
-
-Za projekt na temu CrisisMap sažet pregled može navesti građane kojima trebaju informacije o kriznim događajima povezane s njihovom lokacijom te cilj aplikacije da prijave kriznih događaja prikaže na karti. Funkcionalnost spomenite samo ako pripada odobrenom zadatku tima; bez dokaza nemojte tvrditi da aplikacija poboljšava odgovor hitnih službi. Ovo je primjer informativnog pregleda, a ne tekst za prepisivanje niti dokaz da je funkcionalnost ostvarena.
-
-</details>
+StormWatch je web aplikacija prilagođena mobitelima koja na jednoj karti prikazuje službena mjerenja DHMZ-a i prijave nevremena koje šalju građani. Namijenjena je građanima koji žele provjeriti stanje u svojem području i prijaviti nepogodu koju su upravo doživjeli. Uz svaku prijavu sprema se mjerenje najbliže postaje, pa se opažanje s terena može usporediti sa službenim podatkom.
 
 **Aplikacija i osnovno postavljanje:** [README repozitorija](../README.md#quick-start)  
 **Javno dostupna aplikacija:** pogledajte [README – Postavljanje](../README.md#deployment)
 
 ## Članovi tima i uloge
 
-Ažurirani popis članova, njihovih GitHub profila i glavnih uloga ili doprinosa nalazi se u [README-u repozitoriju](../README.md#team-members).
+Ažurirani popis članova, njihovih GitHub profila i glavnih uloga ili doprinosa nalazi se u [README-u repozitorija](../README.md#team-members).
 
 ## Kazalo dokumentacije
 
 | Stranica | Svrha |
 | --- | --- |
 | [1. Opseg projekta](1-Projekt.md) | Problem, cilj i granice projekta |
-| [2. Analiza zahtjeva](2-Analiza-zahtjeva.md) | Zahtjevi, ograničenja i sljedivost |
+| [2. Analiza zahtjeva](2-Analiza-zahtjeva.md) | Zahtjevi, ograničenja, promjene i sljedivost zahtjeva |
 | [3. Obrasci uporabe](3-Obrasci-uporabe.md) | Akteri i reprezentativne interakcije korisnika |
 | [4. Arhitektura i oblikovanje](4-Arhitektura-i-oblikovanje.md) | Glavne odluke oblikovanja, struktura, podaci i ponašanje |
 | [5. Ispitivanje](5-Ispitivanje.md) | Pristup ispitivanju, stvarni rezultati i poznati nedostaci |
@@ -45,37 +36,21 @@ Ažurirani popis članova, njihovih GitHub profila i glavnih uloga ili doprinosa
 
 | Kontrolna točka | Demonstracija | Video |
 | --- | --- | --- |
-| Iteracija 1 | [Poveznica na demonstraciju ili inačicu projekta] | [Poveznica na video Demo 1, ako je snimljen] |
-| Završni pregled | [Poveznica na završnu inačicu projekta] | [Poveznica na video završne demonstracije, ako je snimljen] |
+| Iteracija 1 | [Javno dostupna aplikacija](https://stormwatch-4013.onrender.com/) | Nije snimljen |
+| Završni pregled | Dodaje se nakon završnog pregleda | Dodaje se nakon završnog pregleda |
 
 Dokumentacija se kontinuirano ažurira kako se aplikacija razvija.
 
 ## Organizacija projekta i razvojni proces
 
-**Način rada:** [Stvarni način rada i trajanje iteracije, ako je relevantno.]  
-**Praćenje trenutačnih zadataka i nedostataka:** [Poveznica na GitHub Issues ili stvarno korištenu ploču zadataka.]
-
-<details>
-<summary><strong>Opis načina rada tima</strong></summary>
-
-**Primjer — CrisisMap:**
-
-Navedite pristup koji tim stvarno koristi. Tim koji razvija CrisisMap može organizirati prijave, rad na karti i provjere kao GitHub Issues, jednom tjedno raspraviti prioritete i iznad postaviti poveznicu na svoju aktivnu ploču zadataka. Takav je konkretan opis procesa informativniji od tvrdnje da tim koristi „Scrum” ako zapravo ne primjenjuje njegove prakse. Stvarni tim treba navesti vlastiti ritam rada i odgovornosti; dokumentacija ne treba duplicirati ploču zadataka. Primjer opisuje mogući tijek rada (engl. workflow), a ne tvrdi da je objavljeni tim CrisisMapa radio upravo tako.
-
-</details>
+**Način rada:** Posao je podijeljen u zadatke I-01 do I-08 unutar prekretnice „Prva inačica (MVP)”. Oznake zadataka navode vrstu, prioritet, područje (backend ili frontend) i stanje, a zadaci koji ostvaruju arhitekturno značajne zahtjeve imaju oznaku ASR. Svaka promjena razvija se na zasebnoj grani i u `main` ulazi pull requestom nakon uspješnog CI-ja.  
+**Praćenje trenutačnih zadataka i nedostataka:** [GitHub Issues](https://github.com/phenethol/stormwatch/issues)
 
 ## Pravila dokumentacije
 
-Dokumentacija se sastoji od međusobno povezanih Markdown stranica. Obavezni UML dijagrami izrađuju se u PlantUML-u, uz PlantUML izvor u dokumentaciji sačuvajte i čitljivu sliku. Primjeri u ovom predlošku kolegija pokazuju kako nešto dokumentirati; nisu dio rezultata studentskog projekta.
+Dokumentacija se sastoji od međusobno povezanih Markdown stranica. Obavezni UML dijagrami izrađuju se u PlantUML-u, uz PlantUML izvor u dokumentaciji sačuvajte i čitljivu sliku.
 
-<details>
-<summary><strong>Izvori dijagrama i nastavni primjeri</strong></summary>
-
-Nastavni primjeri pretpostavljaju React/Vite klijentski dio, Node.js poslužiteljski dio, PostgreSQL, smještaj aplikacije na Renderu i Selenium WebDriver (JavaScript). Vaš tehnološki skup može biti drukčiji; u dokumentaciji opišite ono što stvarno koristite.
-
-Za obrazac uporabe podnošenja prijave kriznog događaja u CrisisMapu tim može čuvati UML izvor u `.puml` datoteci, prikazati odgovarajuću sliku na relevantnoj stranici dokumentacije te ažurirati oboje kada se interakcija promijeni. Koristite stvarni dijagram i stvarno postavljanje vlastitog projekta. Domena ili tehnologija prikazana u primjeru ne postaje zahtjev osim ako je dio odobrenog zadatka.
-
->Napomena o primjerima: Blokovi „Primjer — CrisisMap" nastavni su scenarij, a ne rezultat ičijeg projekta; ne prepisujte ih. U primjerima se koriste React, Node.js, PostgreSQL, Render i Selenium samo radi dosljednosti. Vaš stog može biti drukčiji (npr. Java/Spring); dokumentirajte ono što stvarno koristite.</details>
+PlantUML izvori nalaze se u `docs/puml/`. Nakon spajanja u `main` GitHub Action [`generate-puml-diagrams.yaml`](../.github/workflows/generate-puml-diagrams.yaml) iz njih generira SVG slike u `docs/assets/diagrams/`, koje prikazuju stranice dokumentacije. Ugovor API-ja između frontenda i backenda vodi se u [`docs/api/openapi.yaml`](api/openapi.yaml). Blokovi „Primjer — CrisisMap” u poglavljima koja još nisu popunjena dio su predloška kolegija, a ne rezultat ovog projekta.
 
 ## Akademski integritet, ponašanje i licenciranje
 
@@ -83,57 +58,18 @@ README repozitorija sadrži projektnu [izjavu o uporabi umjetne inteligencije](.
 
 ## Izjava o uporabi umjetne inteligencije
 
-<!-- UPUTA: Ovo je detaljan zapis uporabe umjetne inteligencije; README sadrži kratak sažetak i poveznicu na ovaj odjeljak. Unesite samo ono što se stvarno dogodilo i uklonite neupotrijebljene retke. Ako nije korišten nijedan alat generativne umjetne inteligencije, zamijenite cijeli odjeljak jednom rečenicom koja to jasno navodi. Svaki redak mora upućivati na stranicu, datoteku, zahtjev za uključivanje promjena (PR) ili zadatak. Nikada ne unosite pristupne podatke, osobne podatke ni tuđi zaštićeni sadržaj u alate umjetne inteligencije. -->
-
-Kratak sažetak: [README – Uporaba umjetne inteligencije](../README.md#ai-usage). Ovaj odjeljak bilježi koji su alati korišteni, za koju dokumentaciju ili kod te kako je tim provjerio rezultat. Slijedi FER-ova [pravila o primjerenoj uporabi umjetne inteligencije](https://www.fer.unizg.hr/_download/repository/Policy%20on%20the%20appropriate%20use%20of%20artificial%20intelligence%20at%20the%20faculty%20of%20electrical%20engineering%20and%20computing%5B1%5D.pdf).
+Kratak sažetak: [README – Uporaba umjetne inteligencije](../README.md#ai-usage). Ovaj odjeljak bilježi koji su alati korišteni i za što. Alati su korišteni u skladu s Kodeksom ponašanja studenata FER-a i FER-ovim [pravilima o primjerenoj uporabi umjetne inteligencije](https://www.fer.unizg.hr/_download/repository/Policy%20on%20the%20appropriate%20use%20of%20artificial%20intelligence%20at%20the%20faculty%20of%20electrical%20engineering%20and%20computing%5B1%5D.pdf).
 
 ### Korišteni alati
 
 | Alat | Inačica ili model | Koristio/la | Glavna svrha |
 | --- | --- | --- | --- |
-| [Naziv alata] | [Inačica ili model, ako je poznat] | [Član/članovi tima] | [npr. izrada nacrta dokumentacije, generiranje izvora dijagrama] |
-
-### Opseg doprinosa umjetne inteligencije
-
-| Stranica, datoteka ili artefakt | Vrsta pomoći | Što je alat proizveo | Što je tim zadao i promijenio | Lokacija |
-| --- | --- | --- | --- | --- |
-| [npr. 3. Obrasci uporabe, UC-002] | [Izrada nacrta / preoblikovanje / prijevod / izvor dijagrama / sažimanje] | [Kratak opis] | [Ulaz zadan alatu; dodane, ispravljene ili uklonjene činjenice] | [Stranica dokumentacije, `.puml` datoteka, PR] |
-
-Stranice i artefakti koji nisu navedeni iznad izrađeni su bez pomoći generativne umjetne inteligencije. [Po želji: kao dodatne retke navedite kod ili ispitivanja izrađena uz pomoć umjetne inteligencije.]
+| Claude | Opus 5.5 | Članovi tima | Pomoć u pisanju koda; formatiranje teksta i dotjerivanje rečenica u dokumentaciji |
+| GPT | Astra | Članovi tima | Pomoć u pisanju koda |
 
 ### Provjera generiranog sadržaja
 
 | Provjera | Kako je provedena | Dokaz |
 | --- | --- | --- |
-| Činjenična točnost | [Svaka tvrdnja o funkcionalnostima, ponašanju ili arhitekturi uspoređena je s pokrenutom aplikacijom i kodom] | [Imena pregledavatelja; poveznice na zahtjev za uključivanje promjena (PR) ili zadatak] |
-| Nema tvrdnji o neostvarenim funkcionalnostima | [Provjereno je da opisane funkcionalnosti, ispitivanja i rezultati stvarno postoje; planirani rad označen je kao planiran] | [Usporedba s odjeljkom 5.4 (Ispitivanje) i odjeljkom 7.1 (Zaključak)] |
-| Dosljednost s drugim stranicama | [Nazivi, ID-ovi i dijagrami provjereni su prema Analizi zahtjeva, Obrascima uporabe, Arhitekturi i oblikovanju te Ispitivanju] | [Kontrolni popis ili bilješka pregleda] |
-| Izvori dijagrama | [Generirani PlantUML je iscrtan, ispravljen i odgovara implementiranom sustavu] | [`.puml` datoteka i izrađena slika] |
-| Povjerljivi sadržaj | [Kako je tim osigurao da u upite ili dokumentaciju nisu unesene tajne, pristupni podaci ni osobni podaci] | [Primijenjeni postupak] |
-
-### Pogreške pronađene u izlazu umjetne inteligencije
-
-| Problem | Kako je pronađen | Rješenje |
-| --- | --- | --- |
-| [Netočna, izmišljena ili iz predloška preuzeta tvrdnja] | [Pregled, ispitivanje ili usporedba s aplikacijom] | [Ispravak s poveznicom] |
-
-<!-- UPUTA: Zabilježite stvarne ispravke ili napišite „Nisu utvrđene”. Općenita tvrdnja poput „sav tekst je pregledan” nije dokaz; dokaz su prethodne tablice. Tim mora moći objasniti svaku rečenicu koju objavi. -->
-
-<details>
-<summary><strong>Primjer zapisa uporabe umjetne inteligencije</strong></summary>
-
-**Primjer — CrisisMap:**
-
-| Stranica ili artefakt | Vrsta pomoći | Što je alat proizveo | Što je tim zadao i promijenio | Lokacija |
-| --- | --- | --- | --- | --- |
-| 3. Obrasci uporabe, UC-002 | Izrada nacrta | Prvu inačicu glavnog i alternativnih tijekova | Tim je zadao stvarna polja obrasca i uklonio granu prijave u sustav koja u aplikaciji ne postoji | Primjer PR #31 |
-| Sekvencijski dijagram, podnošenje prijave | Izvor dijagrama | Nacrt PlantUML-a | Tim je uskladio nazive sudionika s komponentama i uklonio korak slanja obavijesti koji nije implementiran | `diagrams/report-submission.puml` (primjer) |
-
-| Problem | Kako je pronađen | Rješenje |
-| --- | --- | --- |
-| U tekstu je stajalo da se obavijesti dostavljaju unutar jedne minute | Usporedba s Ispitivanjem (5.4): dostava nikada nije ispitana | Tvrdnja je uklonjena; obavijesti su navedene pod Budućim radom |
-| Nacrt je kopirao primjer zahtjeva F-005 iz predloška kao projektni zahtjev | Usporedba s vlastitim popisom zahtjeva tima | Zamijenjeno stvarnim zahtjevom tima |
-
-**Analiza primjera:** Svaki redak navodi stranicu ili datoteku, ono što je alat generirao i ono što je tim promijenio. Pogreške su tipične za generiranu dokumentaciju: funkcionalnost koja ne postoji i tekst predloška prikazan kao činjenica o projektu. Tvrdnje poput „AI je korišten svugdje” ili „sav tekst je pregledan” nije moguće provjeriti. Ovo je nastavni scenarij, a ne opis objavljenog projekta.
-
-</details>
+| Kod | Kod nastao uz pomoć alata u `main` ulazi istim putem kao i ostali kod: pull requestom i nakon uspješnog CI-ja (lint i build frontenda, testovi backenda nad PostgreSQL-om). | [Pull requestovi](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr), [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
+| Povjerljivi sadržaj | Tajne vrijednosti (`backend/.env`) ne nalaze se u repozitoriju ni u dokumentaciji; u repozitoriju su samo predlošci `.env.example` bez tajni. | `backend/.env.example`, `frontend/.env.example` |
