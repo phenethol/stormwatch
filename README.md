@@ -23,7 +23,7 @@ Za potpuni opseg, zahtjeve, oblikovanje i dokaze ispitivanja pogledajte [docs](d
 
 **Isprobajte:** Na karti otvorite „Pregled → Postaje” i pogledajte posljednja mjerenja DHMZ-a. Zatim se prijavite Google računom („Prijava”), predajte prijavu („Nova prijava”) i pronađite je u „Moje prijave” u stanju „Na čekanju”.
 
-**Demonstracija:** Za prijavu je potreban Google račun; aplikacija nema lozinke ni demonstracijske račune.
+**Demonstracija:** [Demo video prve inačice](docs/assets/video/stormwatch-demo-iteracija-1.mp4). Za prijavu je potreban Google račun; aplikacija nema lozinke ni demonstracijske račune.
 
 **Ograničenja:**
 
