@@ -21,7 +21,7 @@
 | 26. 10. – 1. 11. 2026. | Pojednostavljenje zahtjeva i obrazaca uporabe nakon povratne informacije asistenta; prijava isključivo Google računom | SL | [PR #11](https://github.com/phenethol/stormwatch/pull/11) |
 | 2. – 8. 11. 2026. | OpenAPI ugovor između frontenda i backenda; karta s mjernim postajama na lažnim podacima | MV, TJ | [PR #12](https://github.com/phenethol/stormwatch/pull/12), [PR #14](https://github.com/phenethol/stormwatch/pull/14) (I-04a) |
 | 9. – 15. 11. 2026. | Temelj backenda; PostgreSQL u Dockeru, prijava Google računom i predaja prijave; CI i CD; podaci DHMZ-a; API prijava; početni pregled „Moje prijave” | SK, MV, SL, PRo | [PR #15 – #21](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged) (I-02, I-03, I-05, I-06) |
-| 16. – 20. 11. 2026. | Frontend prve inačice povezan sa stvarnim backendom; postavljanje kao jedna usluga na Renderu; dokumentacija za predaju | Svi članovi | [PR #24 – #45](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged) |
+| 16. – 20. 11. 2026. | Frontend prve inačice povezan sa stvarnim backendom; postavljanje kao jedna usluga na Renderu; dokumentacija i demo video za predaju | Svi članovi | [PR #24 – #49](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged) |
 
 Tablica prikazuje glavni rad po tjednima prve inačice. Plan druge inačice (I-07 potvrda i osporavanje, I-08 moderacija, upozorenja DHMZ-a i obavijesti) dodaje se nakon pregleda Iteracije 1.
 
@@ -31,12 +31,12 @@ Tablica prikazuje glavni rad po tjednima prve inačice. Plan druge inačice (I-0
 | --- | --- | --- | --- |
 | Postavljanje repozitorija, zadaci I-01 – I-08 i OpenAPI ugovor | MV | 12 | Zadaci I-01 – I-08; [PR #12](https://github.com/phenethol/stormwatch/pull/12) |
 | Backend: PostgreSQL u Dockeru, predaja prijave, API prijava, obrada fotografija i pravila vidljivosti | MV | 11 | [PR #17](https://github.com/phenethol/stormwatch/pull/17), [PR #21](https://github.com/phenethol/stormwatch/pull/21) |
-| CI i CD, postavljanje na Render, produkcijska adresa i karta u produkciji | MV | 7 | [PR #18](https://github.com/phenethol/stormwatch/pull/18), [#19](https://github.com/phenethol/stormwatch/pull/19), [#30](https://github.com/phenethol/stormwatch/pull/30), [#32](https://github.com/phenethol/stormwatch/pull/32) |
+| CI i CD, postavljanje na Render, produkcijska adresa i karta u produkciji; demo video prve inačice | MV | 7 | [PR #18](https://github.com/phenethol/stormwatch/pull/18), [#19](https://github.com/phenethol/stormwatch/pull/19), [#30](https://github.com/phenethol/stormwatch/pull/30), [#32](https://github.com/phenethol/stormwatch/pull/32); [demo video](assets/video/stormwatch-demo-iteracija-1.mp4) ([PR #49](https://github.com/phenethol/stormwatch/pull/49)) |
 | Temelj backenda: Django, django-allauth, Django Ninja i model korisnika | SK | 15 | [PR #16](https://github.com/phenethol/stormwatch/pull/16) |
 | Pojednostavljenje zahtjeva i obrazaca uporabe | SL | 5 | [PR #11](https://github.com/phenethol/stormwatch/pull/11) |
 | Prijava Google računom: CSRF i dovršetak registracije | SL | 2 | Zapis promjena 338d77b u [PR #17](https://github.com/phenethol/stormwatch/pull/17) |
 | Podaci DHMZ-a i API postaja; posluživanje frontenda na Renderu | SL | 6 | [PR #20](https://github.com/phenethol/stormwatch/pull/20), [PR #24](https://github.com/phenethol/stormwatch/pull/24) |
-| Dokumentacija za prvu predaju | SL | 13 | [PR #42 – #45](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged) |
+| Dokumentacija i PDF za prvu predaju | SL | 13 | [PR #42 – #46](https://github.com/phenethol/stormwatch/pulls?q=is%3Apr+is%3Amerged), [#49](https://github.com/phenethol/stormwatch/pull/49) |
 | Frontend: početna konfiguracija, „Moje prijave”, Vite proxy, obrazac prijave i povezivanje stranica | PRo | 19 | [PR #10](https://github.com/phenethol/stormwatch/pull/10), [#15](https://github.com/phenethol/stormwatch/pull/15), [#25](https://github.com/phenethol/stormwatch/pull/25), [#35](https://github.com/phenethol/stormwatch/pull/35), [#39](https://github.com/phenethol/stormwatch/pull/39) |
 | Frontend: karta mjernih postaja, prijava Google računom i dijalog računa, „Moje prijave” sa stanjima | TJ | 20 | [PR #14](https://github.com/phenethol/stormwatch/pull/14), [#33](https://github.com/phenethol/stormwatch/pull/33), [#34](https://github.com/phenethol/stormwatch/pull/34) |
 | Frontend: ikona i metapodaci, Vitest, karta prijava, stranica karte s popisom, filtrima i detaljima | IR | 20 | [PR #28](https://github.com/phenethol/stormwatch/pull/28), [#29](https://github.com/phenethol/stormwatch/pull/29), [#37](https://github.com/phenethol/stormwatch/pull/37), [#38](https://github.com/phenethol/stormwatch/pull/38) |
@@ -46,19 +46,19 @@ Tim nije vodio evidenciju sati tijekom rada, pa su sati procjena. Raspon od 15 d
 
 ## A.4 Pregled promjena u repozitoriju
 
-**Prikaz aktivnosti repozitorija:** [GitHub Contributors](https://github.com/phenethol/stormwatch/graphs/contributors) za razdoblje od 13. 10. do 19. 11. 2026.
+**Prikaz aktivnosti repozitorija:** [GitHub Contributors](https://github.com/phenethol/stormwatch/graphs/contributors) za razdoblje od 13. 10. do 19. 11. 2026. Tablica prikazuje stanje grane `main` nakon spajanja PR-a #49.
 
 | Član | GitHub račun | Zapisi promjena (bez spajanja) | Spojeni pull requestovi |
 | --- | --- | --- | --- |
-| Mario Vrdoljak | [phenethol](https://github.com/phenethol) (u gitu i `ethylphenol`) | 27 | 9 |
-| Stipe Ledić | [iStels](https://github.com/iStels) | 9 | 7 |
+| Mario Vrdoljak | [phenethol](https://github.com/phenethol) (u gitu i `ethylphenol`) | 28 | 9 |
+| Stipe Ledić | [iStels](https://github.com/iStels) | 13 | 9 |
 | Petar Rogić | [petarrogic](https://github.com/petarrogic) | 7 | 5 |
 | David Režić | [davidrezic](https://github.com/davidrezic) | 5 | 5 |
 | Ivan Rajilić | [irajilic](https://github.com/irajilic) | 4 | 4 |
 | Tin Jović | [tjovic5](https://github.com/tjovic5) | 4 | 3 |
 | Stipe Kujundžić | [stipeKujundzic](https://github.com/stipeKujundzic) | 1 | 1 |
 
-Broj zapisa promjena ne mjeri veličinu doprinosa. SK je cijeli temelj backenda predao jednim zapisom (PR #16), a zapis 338d77b (SL) ušao je u `main` kroz PR #17 koji je otvorio MV. Jedini preostali zapis napravio je `github-actions[bot]`, koji iz PlantUML izvora generira SVG dijagrame.
+Broj zapisa promjena ne mjeri veličinu doprinosa. SK je cijeli temelj backenda predao jednim zapisom (PR #16), a zapis 338d77b (SL) ušao je u `main` kroz PR #17 koji je otvorio MV. Jedini preostali zapis napravio je `github-actions[bot]`, koji iz PlantUML izvora generira SVG dijagrame. Otvoreni su još PR [#41](https://github.com/phenethol/stormwatch/pull/41) (TJ, čišćenje frontenda) i [#48](https://github.com/phenethol/stormwatch/pull/48) (MV, ograničenje broja piksela fotografija).
 
 ## A.5 Ključni inženjerski izazovi i rješenja
 
