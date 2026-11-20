@@ -3,17 +3,17 @@
 ## 1.1 Problem i cilj projekta
 
 Svake godine ljeti nad Hrvatskom iznenada nastaju jake nepogode. Grad u nekoliko minuta uništi urod, oluja otkrije krovove, a nabujala voda blokira gradske ulice. DHMZ raspolaže gustom mrežom mjerenja, prognoza i upozorenja, no između postaja postoje praznine: jedno mjesto može biti zahvaćeno olujom, dok najbliža stanica bilježi tek kišu.
-Opažanja građana često obuhvaćaju ono što instrumenti previde, no ona su raspršena i nepotvrđena. Tek kada se više prijava s istog područja poveže, provjeri i usporedi sa službenim podacima, ona postaje pouzdan dio slike stvarnog stanja.
+Opažanja građana često obuhvaćaju ono što instrumenti previde, no ona su raspršena i nepotvrđena. Tek kada se više prijava s istog područja poveže, provjeri i usporedi sa službenim podacima, one postaju pouzdane.
 StormWatch objedinjuje službene podatke DHMZ-a i zapažanja korisnika na jednom mjestu. Korisnik ovdje provjerava stanje, prognozu i upozorenja za svoje područje, prijavljuje nepogodu koju je upravo doživio te je s drugima potvrđuje, osporava ili raspravlja o njoj.
 
-**Cilj projekta** je web aplikacija StormWatch, prilagođena mobilnim uređajima, koja na jednom mjestu prikazuje službene podatke DHMZ-a (mjerenja, prognoze i upozorenja) i prijave nevremena koje predaju korisnici. Drugi korisnici prijave potvrđuju, osporavaju i komentiraju, regionalni moderatori ih pregledavaju, a meteorolozi ih stručno komentiraju.
+**Cilj projekta** je izraditi web aplikaciju StormWatch, prilagođenu mobilnim uređajima, koja na jednom mjestu prikazuje službene podatke DHMZ-a (mjerenja, prognoze i upozorenja) i prijave nevremena koje predaju korisnici. Drugi korisnici prijave potvrđuju, osporavaju i komentiraju, regionalni moderatori ih pregledavaju, a meteorolozi ih stručno komentiraju.
 
 **Očekivana korist:** korisnik na jednom mjestu provjerava uvjete, prognozu i upozorenja za svoje područje te vidi provjerena opažanja s terena koja službena mjerenja možda nisu zabilježila. Tim ne tvrdi da aplikacija mjerljivo smanjuje štetu ni da zamjenjuje službena upozorenja.
 
 <details>
 <summary><strong>Očekivane koristi i potkrepljujući dokazi</strong></summary>
 
-| Korist                                                | Kako će se pokazati (bez brojčanih tvrdnji)                                                            |
+| Korist                                                | Kako će se pokazati                                                                                    |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Službeni podaci i opažanja korisnika na jednom mjestu | Mjerenja postaja, upozorenja i prijave vidljivi su kao slojevi iste karte (F-005).                     |
 | Usporedba opažanja sa službenim mjerenjem             | Uz svaku prijavu prikazuje se mjerenje najbliže postaje u trenutku opažanja (F-010).                   |
@@ -32,7 +32,7 @@ Korist se dokazuje demonstracijom funkcionalnosti, a ne mjerenjima na stvarnim k
 | Posjetitelj (neregistrirani korisnik)         | Bez registracije vidjeti trenutačne uvjete, prognozu, aktivna upozorenja i kartu potvrđenih prijava.                                         |
 | Registrirani korisnik                         | Prijaviti nevrijeme koje opaža, potvrditi ili osporiti tuđe prijave, pratiti omiljene lokacije i primati obavijesti.                         |
 | Pouzdani motritelj                            | Objavljivati prijave bez moderacije, s posebnom oznakom; njegova potvrda tuđe prijave ima veću težinu.                                       |
-| Moderator (regionalni)                        | Pregledan red prijava na čekanju i prijavljenog sadržaja u svojoj regiji te alati za potvrdu, odbijanje, brisanje i sankcije.                |
+| Moderator (regionalni)                        | Pregledavati prijave na čekanju i sadržaj koji su korisnici označili kao neprimjeren u svojoj regiji te ih potvrditi, odbiti, obrisati ili sankcionirati autora.                |
 | Meteorolog                                    | Objaviti stručni komentar uz događaj i označiti prijave vrijedne za stručnu analizu.                                                         |
 | Sistemski administrator                       | Upravljati korisnicima i ulogama, podešavati preuzimanje podataka DHMZ-a i pratiti statistiku korištenja.                                    |
 | DHMZ (dionik, vanjski izvor podataka)         | Poštivanje uvjeta korištenja i navođenje izvora; razumno opterećenje njegovih poslužitelja. Ne koristi aplikaciju, ali određuje ograničenja. |
