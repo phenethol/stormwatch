@@ -50,7 +50,7 @@ Dokumentacija se kontinuirano ažurira kako se aplikacija razvija.
 
 Dokumentacija se sastoji od međusobno povezanih Markdown stranica. Obavezni UML dijagrami izrađuju se u PlantUML-u, uz PlantUML izvor u dokumentaciji sačuvajte i čitljivu sliku.
 
-PlantUML izvori nalaze se u `docs/puml/`. Nakon spajanja u `main` GitHub Action [`generate-puml-diagrams.yaml`](../.github/workflows/generate-puml-diagrams.yaml) iz njih generira SVG slike u `docs/assets/diagrams/`, koje prikazuju stranice dokumentacije. Ugovor API-ja između frontenda i backenda vodi se u [`docs/api/openapi.yaml`](api/openapi.yaml). Blokovi „Primjer — CrisisMap” u poglavljima koja još nisu popunjena dio su predloška kolegija, a ne rezultat ovog projekta.
+PlantUML izvori nalaze se u `docs/puml/`. Kad pull request promijeni neki izvor, GitHub Action [`generate-puml-diagrams.yaml`](../.github/workflows/generate-puml-diagrams.yaml) iz njega generira SVG sliku u `docs/assets/diagrams/` i sprema je na granu tog pull requesta, pa slika u `main` ulazi spajanjem zajedno s izvorom. Te slike prikazuju stranice dokumentacije. Ugovor API-ja između frontenda i backenda vodi se u [`docs/api/openapi.yaml`](api/openapi.yaml). Blokovi „Primjer — CrisisMap” u poglavljima koja još nisu popunjena dio su predloška kolegija, a ne rezultat ovog projekta.
 
 ## Akademski integritet, ponašanje i licenciranje
 
