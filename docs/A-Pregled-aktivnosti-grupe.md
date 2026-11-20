@@ -40,25 +40,25 @@ Tablica prikazuje glavni rad po tjednima prve inačice. Plan druge inačice (I-0
 | Frontend: početna konfiguracija, „Moje prijave”, Vite proxy, obrazac prijave i povezivanje stranica | PRo | 19 | [PR #10](https://github.com/phenethol/stormwatch/pull/10), [#15](https://github.com/phenethol/stormwatch/pull/15), [#25](https://github.com/phenethol/stormwatch/pull/25), [#35](https://github.com/phenethol/stormwatch/pull/35), [#39](https://github.com/phenethol/stormwatch/pull/39) |
 | Frontend: karta mjernih postaja, prijava Google računom i dijalog računa, „Moje prijave” sa stanjima; uklanjanje nekorištenog prototipa | TJ | 20 | [PR #14](https://github.com/phenethol/stormwatch/pull/14), [#33](https://github.com/phenethol/stormwatch/pull/33), [#34](https://github.com/phenethol/stormwatch/pull/34), [#41](https://github.com/phenethol/stormwatch/pull/41) |
 | Frontend: ikona i metapodaci, Vitest, karta prijava, stranica karte s popisom, filtrima i detaljima | IR | 20 | [PR #28](https://github.com/phenethol/stormwatch/pull/28), [#29](https://github.com/phenethol/stormwatch/pull/29), [#37](https://github.com/phenethol/stormwatch/pull/37), [#38](https://github.com/phenethol/stormwatch/pull/38) |
-| Frontend: stilovi i zajedničke komponente, pretraga mjesta, integracijski testovi; dorada zahtjeva za registraciju i prijavu | DR | 18 | [PR #26](https://github.com/phenethol/stormwatch/pull/26), [#27](https://github.com/phenethol/stormwatch/pull/27), [#31](https://github.com/phenethol/stormwatch/pull/31), [#36](https://github.com/phenethol/stormwatch/pull/36), [#40](https://github.com/phenethol/stormwatch/pull/40), [#53](https://github.com/phenethol/stormwatch/pull/53) |
+| Frontend: stilovi i zajedničke komponente, pretraga mjesta, integracijski testovi; dorada cilja projekta, korisničkih uloga i zahtjeva za registraciju i prijavu | DR | 18 | [PR #26](https://github.com/phenethol/stormwatch/pull/26), [#27](https://github.com/phenethol/stormwatch/pull/27), [#31](https://github.com/phenethol/stormwatch/pull/31), [#36](https://github.com/phenethol/stormwatch/pull/36), [#40](https://github.com/phenethol/stormwatch/pull/40), [#52](https://github.com/phenethol/stormwatch/pull/52), [#53](https://github.com/phenethol/stormwatch/pull/53) |
 
 Tim nije vodio evidenciju sati tijekom rada, pa su sati procjena. Raspon od 15 do 30 sati po članu procijenio je tim, a unutar njega sati su raspoređeni razmjerno opsegu promjena u repozitoriju: izmijenjenim retcima (bez generiranih datoteka) i spojenim pull requestovima. Ukupno po članu: MV 30, SL 26, IR 20, TJ 20, PRo 19, DR 18 i SK 15 sati.
 
 ## A.4 Pregled promjena u repozitoriju
 
-**Prikaz aktivnosti repozitorija:** [GitHub Contributors](https://github.com/phenethol/stormwatch/graphs/contributors) za razdoblje od 13. 10. do 20. 11. 2026. Tablica prikazuje stanje grane `main` nakon spajanja PR-a #53.
+**Prikaz aktivnosti repozitorija:** [GitHub Contributors](https://github.com/phenethol/stormwatch/graphs/contributors) za razdoblje od 13. 10. do 20. 11. 2026. Tablica prikazuje stanje grane `main` nakon spajanja PR-ova #52 i #53.
 
 | Član | GitHub račun | Zapisi promjena (bez spajanja) | Spojeni pull requestovi |
 | --- | --- | --- | --- |
 | Mario Vrdoljak | [phenethol](https://github.com/phenethol) (u gitu i `ethylphenol`) | 29 | 10 |
 | Stipe Ledić | [iStels](https://github.com/iStels) | 14 | 10 |
+| David Režić | [davidrezic](https://github.com/davidrezic) | 7 | 7 |
 | Petar Rogić | [petarrogic](https://github.com/petarrogic) | 7 | 5 |
-| David Režić | [davidrezic](https://github.com/davidrezic) | 6 | 6 |
 | Tin Jović | [tjovic5](https://github.com/tjovic5) | 5 | 4 |
 | Ivan Rajilić | [irajilic](https://github.com/irajilic) | 4 | 4 |
 | Stipe Kujundžić | [stipeKujundzic](https://github.com/stipeKujundzic) | 1 | 1 |
 
-Broj zapisa promjena ne mjeri veličinu doprinosa. SK je cijeli temelj backenda predao jednim zapisom (PR #16), a zapis 338d77b (SL) ušao je u `main` kroz PR #17 koji je otvorio MV. Preostala dva zapisa napravio je `github-actions[bot]`, koji iz PlantUML izvora generira SVG dijagrame. Otvoren je još PR [#52](https://github.com/phenethol/stormwatch/pull/52) (DR, cilj projekta i korisničke uloge u dokumentaciji).
+Broj zapisa promjena ne mjeri veličinu doprinosa. SK je cijeli temelj backenda predao jednim zapisom (PR #16), a zapis 338d77b (SL) ušao je u `main` kroz PR #17 koji je otvorio MV. Preostala dva zapisa napravio je `github-actions[bot]`, koji iz PlantUML izvora generira SVG dijagrame.
 
 ## A.5 Ključni inženjerski izazovi i rješenja
 
